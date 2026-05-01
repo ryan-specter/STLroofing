@@ -14,6 +14,12 @@
     index: "index.html",
     privacy: "privacy.html"
   };
+  var instagramPostUrls = [
+    "https://www.instagram.com/skysthelimit_roof_repoint/p/DUvbfiNjGjz/",
+    "https://www.instagram.com/skysthelimit_roof_repoint/reel/DUGgZ3djKzn/",
+    "https://www.instagram.com/skysthelimit_roof_repoint/p/DT-_sg1jJgN/",
+    "https://www.instagram.com/skysthelimit_roof_repoint/reel/DT02bfljJoI/"
+  ];
 
   function decodeHtml(value) {
     var textarea = document.createElement("textarea");
@@ -83,6 +89,45 @@
     event.preventDefault();
     event.stopImmediatePropagation();
     window.location.assign(normalizedHref);
+  }
+
+  function getInstagramEmbedUrl(postUrl) {
+    return postUrl.replace(/\/?$/, "/embed/");
+  }
+
+  function createInstagramSlide(postUrl) {
+    var slide = document.createElement("div");
+    var marginWrapper = document.createElement("div");
+    var contentWrapper = document.createElement("div");
+    var videoWrapper = document.createElement("div");
+    var iframeHtml = '<iframe frameborder="0" height="710" scrolling="no" width="612" allowtransparency="true" src="' + getInstagramEmbedUrl(postUrl) + '"></iframe>';
+
+    slide.className = "slide";
+    slide.setAttribute("data-type", "video");
+    slide.setAttribute("data-animation-role", "image");
+    marginWrapper.className = "margin-wrapper";
+    contentWrapper.className = "content-wrapper content-fill";
+    videoWrapper.className = "sqs-video-wrapper";
+    videoWrapper.setAttribute("data-provider-name", "");
+    videoWrapper.setAttribute("data-html", iframeHtml);
+
+    contentWrapper.appendChild(videoWrapper);
+    marginWrapper.appendChild(contentWrapper);
+    slide.appendChild(marginWrapper);
+
+    return slide;
+  }
+
+  function hydrateLatestInstagramPosts() {
+    document.querySelectorAll(".sqs-block-instagram .sqs-gallery").forEach(function (gallery) {
+      if (gallery.getAttribute("data-github-pages-instagram") === "latest") return;
+
+      gallery.innerHTML = "";
+      instagramPostUrls.forEach(function (postUrl) {
+        gallery.appendChild(createInstagramSlide(postUrl));
+      });
+      gallery.setAttribute("data-github-pages-instagram", "latest");
+    });
   }
 
   function hydrateInstagramEmbeds() {
@@ -186,6 +231,7 @@
 
   function runFixes() {
     normalizeInternalLinks();
+    hydrateLatestInstagramPosts();
     hydrateInstagramEmbeds();
     hydrateVideoBackgrounds();
   }
