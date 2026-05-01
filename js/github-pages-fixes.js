@@ -3,6 +3,8 @@
     "8e483bad-8b98-4d57-8e39-1e6ca27624b4": "images/playlist-1.m3u8",
     "1dae9738-081d-40a4-8da3-02315be9f071": "images/playlist.m3u8"
   };
+  var hlsScriptUrl = "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js";
+  var hlsLoaderPromise;
   var localPageTargets = {
     "": "index.html",
     "404": "404.html",
@@ -99,6 +101,55 @@
     });
   }
 
+  function loadHlsScript() {
+    if (window.Hls) return Promise.resolve(window.Hls);
+    if (hlsLoaderPromise) return hlsLoaderPromise;
+
+    hlsLoaderPromise = new Promise(function (resolve, reject) {
+      var script = document.createElement("script");
+      script.src = hlsScriptUrl;
+      script.async = true;
+      script.onload = function () {
+        resolve(window.Hls);
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+
+    return hlsLoaderPromise;
+  }
+
+  function playVideo(video) {
+    var playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(function () {});
+    }
+  }
+
+  function attachVideoSource(video, source) {
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = source;
+      video.addEventListener("loadedmetadata", function () {
+        playVideo(video);
+      }, { once: true });
+      return;
+    }
+
+    loadHlsScript().then(function (Hls) {
+      if (!Hls || !Hls.isSupported()) return;
+
+      var hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false
+      });
+      hls.loadSource(source);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        playVideo(video);
+      });
+    }).catch(function () {});
+  }
+
   function hydrateVideoBackgrounds() {
     document.querySelectorAll(".sqs-video-background-native").forEach(function (background) {
       var player = background.querySelector(".sqs-video-background-native__video-player");
@@ -113,16 +164,23 @@
       var video = document.createElement("video");
       video.autoplay = true;
       video.muted = true;
+      video.defaultMuted = true;
       video.loop = true;
       video.playsInline = true;
+      video.setAttribute("autoplay", "");
+      video.setAttribute("muted", "");
       video.setAttribute("playsinline", "");
       video.setAttribute("webkit-playsinline", "");
       video.className = "github-pages-video-background";
       video.style.width = "100%";
       video.style.height = "100%";
       video.style.objectFit = "cover";
-      video.innerHTML = '<source src="' + videoSourcesBySystemId[systemId] + '" type="application/vnd.apple.mpegurl">';
+      video.addEventListener("ended", function () {
+        video.currentTime = 0;
+        playVideo(video);
+      });
       player.appendChild(video);
+      attachVideoSource(video, videoSourcesBySystemId[systemId]);
     });
   }
 
