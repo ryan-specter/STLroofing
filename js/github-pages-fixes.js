@@ -92,7 +92,10 @@
   }
 
   function getInstagramEmbedUrl(postUrl) {
-    return postUrl.replace(/\/?$/, "/embed/");
+    var match = postUrl.match(/instagram\.com\/(?:[^/]+\/)?(p|reel)\/([^/?#]+)/i);
+    if (!match) return postUrl.replace(/\/?$/, "/embed/");
+
+    return "https://www.instagram.com/" + match[1].toLowerCase() + "/" + match[2] + "/embed/";
   }
 
   function createInstagramSlide(postUrl) {
