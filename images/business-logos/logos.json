@@ -12,6 +12,7 @@
       "name": "TMS Facilities Management",
       "website": "https://tmsfm.co.uk/about-us/",
       "image": "tms_fm.png",
+      "backgroundImage": "animal_tfs_fm.png",
       "hideFromCarousel": true
     },
     {
@@ -19,6 +20,7 @@
       "name": "Animal (Cromer)",
       "website": "https://www.animal.co.uk/pages/animal-store-information?srsltid=AfmBOoqX7nzZq6V-HbtDGp6v-7Qqu4damprBeW-fPCKXlcLk-miNXczh#:~:text=00am%20%2D%207%3A00pm-,Cromer,-%2C%20UK",
       "image": "animal_cromer.png",
+      "backgroundImage": "animal_tfs_fm.png",
       "linkedLogos": [
         "tms_fm"
       ]
