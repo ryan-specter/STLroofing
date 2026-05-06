@@ -14,12 +14,8 @@
     index: "index.html",
     privacy: "privacy.html"
   };
-  var instagramPostUrls = [
-    "https://www.instagram.com/skysthelimit_roof_repoint/p/DUvbfiNjGjz/",
-    "https://www.instagram.com/skysthelimit_roof_repoint/reel/DUGgZ3djKzn/",
-    "https://www.instagram.com/skysthelimit_roof_repoint/p/DT-_sg1jJgN/",
-    "https://www.instagram.com/skysthelimit_roof_repoint/reel/DT02bfljJoI/"
-  ];
+  var logosManifestPath = "images/business-logos/logos.json";
+  var logosCarouselStyleId = "trusted-clients-carousel-styles";
 
   function decodeHtml(value) {
     var textarea = document.createElement("textarea");
@@ -91,46 +87,179 @@
     window.location.assign(normalizedHref);
   }
 
-  function getInstagramEmbedUrl(postUrl) {
-    var match = postUrl.match(/instagram\.com\/(?:[^/]+\/)?(p|reel)\/([^/?#]+)/i);
-    if (!match) return postUrl.replace(/\/?$/, "/embed/");
-
-    return "https://www.instagram.com/" + match[1].toLowerCase() + "/" + match[2] + "/embed/";
+  function getAssetUrl(relativePath) {
+    return getGitHubPagesBasePath() + relativePath.replace(/^\/+/, "");
   }
 
-  function createInstagramSlide(postUrl) {
+  function ensureLogosCarouselStyles() {
+    if (document.getElementById(logosCarouselStyleId)) return;
+
+    var style = document.createElement("style");
+    style.id = logosCarouselStyleId;
+    style.textContent = [
+      ".trusted-clients-carousel { position: relative; width: 100%; }",
+      ".trusted-clients-track { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 0.5rem 0.2rem 0.8rem; -ms-overflow-style: none; scrollbar-width: none; }",
+      ".trusted-clients-track::-webkit-scrollbar { display: none; }",
+      ".trusted-clients-slide { flex: 0 0 calc(33.333% - 0.75rem); min-width: 240px; max-width: 420px; border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; background: rgba(255,255,255,0.04); padding: 1rem; scroll-snap-align: start; }",
+      ".trusted-clients-group { display: flex; align-items: center; justify-content: center; min-height: 72px; }",
+      ".trusted-clients-logo-link { display: inline-flex; align-items: center; justify-content: center; padding: 0.25rem 0.6rem; }",
+      ".trusted-clients-logo-img { display: block; max-height: 56px; width: auto; max-width: 100%; object-fit: contain; }",
+      ".trusted-clients-separator { display: inline-block; width: 1px; height: 40px; background: rgba(255,255,255,0.7); }",
+      ".trusted-clients-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 2rem; height: 2rem; border: 1px solid rgba(255,255,255,0.45); border-radius: 999px; background: rgba(0,0,0,0.45); color: #fff; cursor: pointer; z-index: 2; }",
+      ".trusted-clients-nav[disabled] { opacity: 0.35; cursor: default; }",
+      ".trusted-clients-nav.prev { left: -0.4rem; }",
+      ".trusted-clients-nav.next { right: -0.4rem; }",
+      "@media (max-width: 900px) { .trusted-clients-slide { flex-basis: calc(50% - 0.5rem); } }",
+      "@media (max-width: 640px) { .trusted-clients-slide { flex-basis: 100%; min-width: 0; } .trusted-clients-nav { display: none; } }"
+    ].join("\n");
+    document.head.appendChild(style);
+  }
+
+  function createLogoAnchor(logo) {
+    var anchor = document.createElement("a");
+    var image = document.createElement("img");
+
+    anchor.className = "trusted-clients-logo-link";
+    anchor.href = logo.website;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.setAttribute("aria-label", logo.name);
+
+    image.className = "trusted-clients-logo-img";
+    image.src = getAssetUrl("images/business-logos/" + logo.image);
+    image.alt = logo.name + " logo";
+    image.loading = "lazy";
+
+    anchor.appendChild(image);
+    return anchor;
+  }
+
+  function createLogoSlide(primaryLogo, logoLookup) {
     var slide = document.createElement("div");
-    var marginWrapper = document.createElement("div");
-    var contentWrapper = document.createElement("div");
-    var videoWrapper = document.createElement("div");
-    var iframeHtml = '<iframe frameborder="0" height="710" scrolling="no" width="612" allowtransparency="true" src="' + getInstagramEmbedUrl(postUrl) + '"></iframe>';
+    var group = document.createElement("div");
+    var logoIds = [primaryLogo.id].concat(Array.isArray(primaryLogo.linkedLogos) ? primaryLogo.linkedLogos : []);
 
-    slide.className = "slide";
-    slide.setAttribute("data-type", "video");
-    slide.setAttribute("data-animation-role", "image");
-    marginWrapper.className = "margin-wrapper";
-    contentWrapper.className = "content-wrapper content-fill";
-    videoWrapper.className = "sqs-video-wrapper";
-    videoWrapper.setAttribute("data-provider-name", "");
-    videoWrapper.setAttribute("data-html", iframeHtml);
+    slide.className = "trusted-clients-slide";
+    group.className = "trusted-clients-group";
 
-    contentWrapper.appendChild(videoWrapper);
-    marginWrapper.appendChild(contentWrapper);
-    slide.appendChild(marginWrapper);
+    logoIds.forEach(function (logoId, index) {
+      var logo = logoLookup[logoId];
+      if (!logo) return;
+      if (index > 0) {
+        var separator = document.createElement("span");
+        separator.className = "trusted-clients-separator";
+        separator.setAttribute("aria-hidden", "true");
+        group.appendChild(separator);
+      }
+      group.appendChild(createLogoAnchor(logo));
+    });
 
+    slide.appendChild(group);
     return slide;
   }
 
-  function hydrateLatestInstagramPosts() {
-    document.querySelectorAll(".sqs-block-instagram .sqs-gallery").forEach(function (gallery) {
-      if (gallery.getAttribute("data-github-pages-instagram") === "latest") return;
+  function updateCarouselNavState(track, prevButton, nextButton) {
+    var maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth - 2);
+    prevButton.disabled = track.scrollLeft <= 1;
+    nextButton.disabled = track.scrollLeft >= maxScrollLeft;
+  }
 
-      gallery.innerHTML = "";
-      instagramPostUrls.forEach(function (postUrl) {
-        gallery.appendChild(createInstagramSlide(postUrl));
-      });
-      gallery.setAttribute("data-github-pages-instagram", "latest");
+  function createTrustedClientsCarousel(logos) {
+    var wrapper = document.createElement("div");
+    var prevButton = document.createElement("button");
+    var nextButton = document.createElement("button");
+    var track = document.createElement("div");
+    var logoLookup = {};
+
+    logos.forEach(function (logo) {
+      logoLookup[logo.id] = logo;
     });
+
+    wrapper.className = "trusted-clients-carousel";
+    track.className = "trusted-clients-track";
+
+    prevButton.className = "trusted-clients-nav prev";
+    prevButton.type = "button";
+    prevButton.setAttribute("aria-label", "Previous client logos");
+    prevButton.innerHTML = "&#8249;";
+
+    nextButton.className = "trusted-clients-nav next";
+    nextButton.type = "button";
+    nextButton.setAttribute("aria-label", "Next client logos");
+    nextButton.innerHTML = "&#8250;";
+
+    logos.forEach(function (logo) {
+      if (logo.hideFromCarousel) return;
+      track.appendChild(createLogoSlide(logo, logoLookup));
+    });
+
+    prevButton.addEventListener("click", function () {
+      track.scrollBy({ left: -Math.max(track.clientWidth * 0.8, 260), behavior: "smooth" });
+    });
+
+    nextButton.addEventListener("click", function () {
+      track.scrollBy({ left: Math.max(track.clientWidth * 0.8, 260), behavior: "smooth" });
+    });
+
+    track.addEventListener("scroll", function () {
+      updateCarouselNavState(track, prevButton, nextButton);
+    });
+
+    window.addEventListener("resize", function () {
+      updateCarouselNavState(track, prevButton, nextButton);
+    });
+
+    wrapper.appendChild(prevButton);
+    wrapper.appendChild(track);
+    wrapper.appendChild(nextButton);
+
+    setTimeout(function () {
+      updateCarouselNavState(track, prevButton, nextButton);
+    }, 0);
+
+    return wrapper;
+  }
+
+  function updateTrustedClientsHeading(instagramBlock) {
+    var textBlock = instagramBlock && instagramBlock.parentElement && instagramBlock.parentElement.previousElementSibling;
+    if (!textBlock) return;
+
+    var heading = textBlock.querySelector("h2");
+    var paragraph = textBlock.querySelector("p");
+
+    if (heading) heading.textContent = "Trusted by names you know";
+    if (paragraph) {
+      paragraph.textContent = "Professional clients and organisations we have worked with.";
+    }
+  }
+
+  function hydrateTrustedClientsCarousel() {
+    var instagramBlock = document.querySelector(".sqs-block-instagram");
+    if (!instagramBlock || instagramBlock.getAttribute("data-github-pages-logos") === "ready") return;
+
+    fetch(getAssetUrl(logosManifestPath))
+      .then(function (response) {
+        if (!response.ok) throw new Error("Unable to load logos.json");
+        return response.json();
+      })
+      .then(function (manifest) {
+        if (!manifest || !Array.isArray(manifest.logos) || !manifest.logos.length) return;
+
+        ensureLogosCarouselStyles();
+
+        var blockContent = instagramBlock.querySelector(".sqs-block-content");
+        if (!blockContent) return;
+
+        blockContent.innerHTML = "";
+        blockContent.appendChild(createTrustedClientsCarousel(manifest.logos));
+        updateTrustedClientsHeading(instagramBlock);
+        instagramBlock.classList.remove("sqs-block-instagram", "instagram-block");
+        instagramBlock.classList.add("trusted-clients-block");
+        instagramBlock.setAttribute("data-github-pages-logos", "ready");
+      })
+      .catch(function (error) {
+        console.warn(error);
+      });
   }
 
   function hydrateInstagramEmbeds() {
@@ -234,8 +363,7 @@
 
   function runFixes() {
     normalizeInternalLinks();
-    hydrateLatestInstagramPosts();
-    hydrateInstagramEmbeds();
+    hydrateTrustedClientsCarousel();
     hydrateVideoBackgrounds();
   }
 
