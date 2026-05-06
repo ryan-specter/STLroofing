@@ -97,20 +97,20 @@
     var style = document.createElement("style");
     style.id = logosCarouselStyleId;
     style.textContent = [
-      ".trusted-clients-carousel { position: relative; width: 100%; }",
-      ".trusted-clients-track { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 0.5rem 0.2rem 0.8rem; -ms-overflow-style: none; scrollbar-width: none; }",
+      ".trusted-clients-carousel { position: relative; width: 100%; overflow: hidden; padding: 0.75rem 0 1rem; }",
+      ".trusted-clients-carousel::before, .trusted-clients-carousel::after { content: ''; position: absolute; top: 0; bottom: 0; width: 8%; z-index: 2; pointer-events: none; }",
+      ".trusted-clients-carousel::before { left: 0; background: linear-gradient(90deg, rgba(0,0,0,0.7), rgba(0,0,0,0)); }",
+      ".trusted-clients-carousel::after { right: 0; background: linear-gradient(270deg, rgba(0,0,0,0.7), rgba(0,0,0,0)); }",
+      ".trusted-clients-track { display: flex; gap: 2.1rem; overflow-x: auto; scroll-behavior: auto; padding: 0.35rem 0; -ms-overflow-style: none; scrollbar-width: none; }",
       ".trusted-clients-track::-webkit-scrollbar { display: none; }",
-      ".trusted-clients-slide { flex: 0 0 calc(33.333% - 0.75rem); min-width: 240px; max-width: 420px; border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; background: rgba(255,255,255,0.04); padding: 1rem; scroll-snap-align: start; }",
-      ".trusted-clients-group { display: flex; align-items: center; justify-content: center; min-height: 72px; }",
-      ".trusted-clients-logo-link { display: inline-flex; align-items: center; justify-content: center; padding: 0.25rem 0.6rem; }",
-      ".trusted-clients-logo-img { display: block; max-height: 56px; width: auto; max-width: 100%; object-fit: contain; }",
-      ".trusted-clients-separator { display: inline-block; width: 1px; height: 40px; background: rgba(255,255,255,0.7); }",
-      ".trusted-clients-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 2rem; height: 2rem; border: 1px solid rgba(255,255,255,0.45); border-radius: 999px; background: rgba(0,0,0,0.45); color: #fff; cursor: pointer; z-index: 2; }",
-      ".trusted-clients-nav[disabled] { opacity: 0.35; cursor: default; }",
-      ".trusted-clients-nav.prev { left: -0.4rem; }",
-      ".trusted-clients-nav.next { right: -0.4rem; }",
-      "@media (max-width: 900px) { .trusted-clients-slide { flex-basis: calc(50% - 0.5rem); } }",
-      "@media (max-width: 640px) { .trusted-clients-slide { flex-basis: 100%; min-width: 0; } .trusted-clients-nav { display: none; } }"
+      ".trusted-clients-slide { flex: 0 0 auto; }",
+      ".trusted-clients-group { display: flex; align-items: center; justify-content: center; min-height: 94px; }",
+      ".trusted-clients-logo-link { display: inline-flex; align-items: center; justify-content: center; padding: 0 0.35rem; transition: transform 0.25s ease, opacity 0.25s ease, filter 0.25s ease; opacity: 0.93; }",
+      ".trusted-clients-logo-link:hover, .trusted-clients-logo-link:focus-visible { transform: translateY(-2px) scale(1.04); opacity: 1; filter: drop-shadow(0 0 14px rgba(255,255,255,0.22)); }",
+      ".trusted-clients-logo-img { display: block; max-height: 78px; width: auto; max-width: 200px; object-fit: contain; }",
+      ".trusted-clients-separator { display: inline-block; width: 2px; height: 52px; margin: 0 0.6rem; background: rgba(255,255,255,0.9); box-shadow: 0 0 10px rgba(255,255,255,0.28); }",
+      "@media (max-width: 900px) { .trusted-clients-track { gap: 1.5rem; } .trusted-clients-logo-img { max-height: 66px; max-width: 170px; } }",
+      "@media (max-width: 640px) { .trusted-clients-track { gap: 1.1rem; } .trusted-clients-group { min-height: 78px; } .trusted-clients-logo-img { max-height: 52px; max-width: 130px; } .trusted-clients-separator { height: 38px; margin: 0 0.45rem; } }"
     ].join("\n");
     document.head.appendChild(style);
   }
@@ -158,16 +158,39 @@
     return slide;
   }
 
-  function updateCarouselNavState(track, prevButton, nextButton) {
-    var maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth - 2);
-    prevButton.disabled = track.scrollLeft <= 1;
-    nextButton.disabled = track.scrollLeft >= maxScrollLeft;
+  function startCarouselAutoscroll(wrapper, track) {
+    var isPaused = false;
+    var baseSlidesCount = track.children.length;
+    var speedPixelsPerFrame = 0.35;
+
+    if (!baseSlidesCount) return;
+
+    function animate() {
+      if (!isPaused) {
+        track.scrollLeft += speedPixelsPerFrame;
+        if (track.scrollLeft >= track.scrollWidth / 2) {
+          track.scrollLeft = 0;
+        }
+      }
+      window.requestAnimationFrame(animate);
+    }
+
+    wrapper.addEventListener("mouseenter", function () { isPaused = true; });
+    wrapper.addEventListener("mouseleave", function () { isPaused = false; });
+    wrapper.addEventListener("focusin", function () { isPaused = true; });
+    wrapper.addEventListener("focusout", function () { isPaused = false; });
+    wrapper.addEventListener("touchstart", function () { isPaused = true; }, { passive: true });
+    wrapper.addEventListener("touchend", function () { isPaused = false; });
+
+    for (var i = 0; i < baseSlidesCount; i += 1) {
+      track.appendChild(track.children[i].cloneNode(true));
+    }
+
+    window.requestAnimationFrame(animate);
   }
 
   function createTrustedClientsCarousel(logos) {
     var wrapper = document.createElement("div");
-    var prevButton = document.createElement("button");
-    var nextButton = document.createElement("button");
     var track = document.createElement("div");
     var logoLookup = {};
 
@@ -178,44 +201,13 @@
     wrapper.className = "trusted-clients-carousel";
     track.className = "trusted-clients-track";
 
-    prevButton.className = "trusted-clients-nav prev";
-    prevButton.type = "button";
-    prevButton.setAttribute("aria-label", "Previous client logos");
-    prevButton.innerHTML = "&#8249;";
-
-    nextButton.className = "trusted-clients-nav next";
-    nextButton.type = "button";
-    nextButton.setAttribute("aria-label", "Next client logos");
-    nextButton.innerHTML = "&#8250;";
-
     logos.forEach(function (logo) {
       if (logo.hideFromCarousel) return;
       track.appendChild(createLogoSlide(logo, logoLookup));
     });
 
-    prevButton.addEventListener("click", function () {
-      track.scrollBy({ left: -Math.max(track.clientWidth * 0.8, 260), behavior: "smooth" });
-    });
-
-    nextButton.addEventListener("click", function () {
-      track.scrollBy({ left: Math.max(track.clientWidth * 0.8, 260), behavior: "smooth" });
-    });
-
-    track.addEventListener("scroll", function () {
-      updateCarouselNavState(track, prevButton, nextButton);
-    });
-
-    window.addEventListener("resize", function () {
-      updateCarouselNavState(track, prevButton, nextButton);
-    });
-
-    wrapper.appendChild(prevButton);
     wrapper.appendChild(track);
-    wrapper.appendChild(nextButton);
-
-    setTimeout(function () {
-      updateCarouselNavState(track, prevButton, nextButton);
-    }, 0);
+    startCarouselAutoscroll(wrapper, track);
 
     return wrapper;
   }
