@@ -4,13 +4,15 @@
       "id": "albert_bartlett",
       "name": "Albert Bartlett",
       "website": "https://albertbartlett.co.uk/",
-      "image": "albert_bartlett.png"
+      "image": "albert_bartlett.png",
+      "backgroundImage": "images/home-hero-shot.jpg"
     },
     {
       "id": "tms_fm",
       "name": "TMS Facilities Management",
       "website": "https://tmsfm.co.uk/about-us/",
       "image": "tms_fm.png",
+      "backgroundImage": "images/hero-shot.png",
       "hideFromCarousel": true
     },
     {
@@ -18,6 +20,7 @@
       "name": "Animal (Cromer)",
       "website": "https://www.animal.co.uk/pages/animal-store-information?srsltid=AfmBOoqX7nzZq6V-HbtDGp6v-7Qqu4damprBeW-fPCKXlcLk-miNXczh#:~:text=00am%20%2D%207%3A00pm-,Cromer,-%2C%20UK",
       "image": "animal_cromer.png",
+      "backgroundImage": "images/image-asset.jpeg",
       "linkedLogos": [
         "tms_fm"
       ]
@@ -26,13 +29,15 @@
       "id": "mundesley_parish_council",
       "name": "Mundesley Parish Council",
       "website": "https://www.mundesley-pc.gov.uk/",
-      "image": "mundesley_parish_council.png"
+      "image": "mundesley_parish_council.png",
+      "backgroundImage": "images/image-asset-1.jpeg"
     },
     {
       "id": "watsons_property",
       "name": "Watsons Property Group",
       "website": "https://www.watsons-property.co.uk/",
-      "image": "watsons_property.png"
+      "image": "watsons_property.png",
+      "backgroundImage": "images/image-asset-3.jpeg"
     }
   ]
 }

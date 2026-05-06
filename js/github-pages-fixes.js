@@ -105,6 +105,11 @@
     style.id = logosCarouselStyleId;
     style.textContent = [
       ".page-section.trusted-clients-section { padding-top: 0 !important; padding-bottom: 0 !important; }",
+      ".page-section.trusted-clients-section { position: relative; overflow: hidden; }",
+      ".trusted-clients-brand-backdrop { position: absolute; inset: 0; pointer-events: none; z-index: 0; }",
+      ".trusted-clients-brand-layer { position: absolute; inset: 0; background-position: center; background-repeat: no-repeat; background-size: cover; opacity: 0; transition: opacity 500ms ease-in-out; filter: saturate(1.05) contrast(1.02); }",
+      ".trusted-clients-brand-layer.is-active { opacity: 0.3; }",
+      ".trusted-clients-heading-fe-block, .trusted-clients-fe-block, .trusted-clients-following-fe-block { position: relative; z-index: 2; }",
       ".trusted-clients-fe-block, .trusted-clients-fe-block .sqs-block, .trusted-clients-fe-block .sqs-block-content { min-height: 0 !important; }",
       ".trusted-clients-heading-fe-block .sqs-html-content, .trusted-clients-heading-fe-block .sqs-block-content { padding-bottom: 0 !important; margin-bottom: 0 !important; }",
       ".trusted-clients-following-fe-block .sqs-html-content, .trusted-clients-following-fe-block .sqs-block-content { padding-top: 0 !important; margin-top: 0 !important; }",
@@ -156,6 +161,7 @@
     var logoIds = [primaryLogo.id].concat(Array.isArray(primaryLogo.linkedLogos) ? primaryLogo.linkedLogos : []);
 
     slide.className = "trusted-clients-slide";
+    slide.setAttribute("data-primary-logo-id", primaryLogo.id);
     group.className = "trusted-clients-group";
 
     logoIds.forEach(function (logoId, index) {
@@ -367,6 +373,130 @@
     window.requestAnimationFrame(animate);
   }
 
+  function resolveBrandBackgroundUrl(rawPath) {
+    if (!rawPath) return null;
+    if (/^(https?:)?\/\//i.test(rawPath) || rawPath.indexOf("data:") === 0) return rawPath;
+    if (rawPath.indexOf("/") === 0 || rawPath.indexOf("images/") === 0) return getAssetUrl(rawPath);
+    return getAssetUrl("images/business-logos/" + rawPath);
+  }
+
+  function ensureTrustedClientsBackdrop(section) {
+    if (!section) return null;
+    var existing = section.querySelector(".trusted-clients-brand-backdrop");
+    if (existing) return existing;
+
+    var backdrop = document.createElement("div");
+    var layerA = document.createElement("div");
+    var layerB = document.createElement("div");
+
+    backdrop.className = "trusted-clients-brand-backdrop";
+    layerA.className = "trusted-clients-brand-layer is-active";
+    layerB.className = "trusted-clients-brand-layer";
+
+    backdrop.appendChild(layerA);
+    backdrop.appendChild(layerB);
+    section.insertBefore(backdrop, section.firstChild);
+    return backdrop;
+  }
+
+  function setupCarouselBrandBackdrop(wrapper, track, logos, section) {
+    var backgroundByLogoId = {};
+    var hasAnyBackground = false;
+    var activeLogoId = null;
+    var hoverLogoId = null;
+    var isLayerAActive = true;
+    var updatePending = false;
+    var backdrop;
+    var layerA;
+    var layerB;
+
+    logos.forEach(function (logo) {
+      var resolved = resolveBrandBackgroundUrl(logo.backgroundImage || logo.brandBackgroundImage);
+      backgroundByLogoId[logo.id] = resolved;
+      if (resolved) hasAnyBackground = true;
+    });
+
+    if (!hasAnyBackground || !section) return;
+
+    backdrop = ensureTrustedClientsBackdrop(section);
+    if (!backdrop) return;
+    layerA = backdrop.children[0];
+    layerB = backdrop.children[1];
+
+    function applyBackgroundForLogo(logoId) {
+      var imageUrl = backgroundByLogoId[logoId];
+      var incomingLayer;
+      var outgoingLayer;
+
+      if (logoId === activeLogoId) return;
+      activeLogoId = logoId;
+
+      if (!imageUrl) {
+        layerA.classList.remove("is-active");
+        layerB.classList.remove("is-active");
+        return;
+      }
+
+      incomingLayer = isLayerAActive ? layerB : layerA;
+      outgoingLayer = isLayerAActive ? layerA : layerB;
+      incomingLayer.style.backgroundImage = "url('" + imageUrl + "')";
+      outgoingLayer.classList.remove("is-active");
+      incomingLayer.classList.add("is-active");
+      isLayerAActive = !isLayerAActive;
+    }
+
+    function pickCenteredLogoId() {
+      var slides = track.querySelectorAll(".trusted-clients-slide");
+      var trackRect = track.getBoundingClientRect();
+      var centerX = trackRect.left + (trackRect.width / 2);
+      var bestLogoId = null;
+      var closestDistance = Infinity;
+
+      slides.forEach(function (slide) {
+        var rect = slide.getBoundingClientRect();
+        var slideCenter = rect.left + (rect.width / 2);
+        var distance = Math.abs(slideCenter - centerX);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          bestLogoId = slide.getAttribute("data-primary-logo-id");
+        }
+      });
+
+      return bestLogoId;
+    }
+
+    function scheduleBackdropUpdate() {
+      if (updatePending) return;
+      updatePending = true;
+      window.requestAnimationFrame(function () {
+        var centeredLogoId = hoverLogoId || pickCenteredLogoId();
+        updatePending = false;
+        if (centeredLogoId) applyBackgroundForLogo(centeredLogoId);
+      });
+    }
+
+    wrapper.addEventListener("pointerover", function (event) {
+      var logoLink = event.target && event.target.closest && event.target.closest(".trusted-clients-logo-link");
+      var slide = logoLink && logoLink.closest(".trusted-clients-slide");
+      var primaryLogoId = slide && slide.getAttribute("data-primary-logo-id");
+      if (!primaryLogoId) return;
+      hoverLogoId = primaryLogoId;
+      scheduleBackdropUpdate();
+    });
+
+    wrapper.addEventListener("pointerout", function (event) {
+      if (!event.relatedTarget || !wrapper.contains(event.relatedTarget)) {
+        hoverLogoId = null;
+        scheduleBackdropUpdate();
+      }
+    });
+
+    track.addEventListener("scroll", scheduleBackdropUpdate, { passive: true });
+    window.addEventListener("resize", scheduleBackdropUpdate);
+    wrapper.addEventListener("pointerup", scheduleBackdropUpdate);
+    scheduleBackdropUpdate();
+  }
+
   function createTrustedClientsCarousel(logos, section) {
     var wrapper = document.createElement("div");
     var track = document.createElement("div");
@@ -392,6 +522,7 @@
     wrapper.appendChild(track);
     wrapper.appendChild(scrollbar);
     startCarouselAutoscroll(wrapper, track, section);
+    setupCarouselBrandBackdrop(wrapper, track, logos, section);
 
     return wrapper;
   }
