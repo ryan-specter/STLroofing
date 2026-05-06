@@ -110,14 +110,17 @@
       ".trusted-clients-carousel { position: relative; width: 100%; overflow: hidden; padding: 0; }",
       ".trusted-clients-track { display: flex; gap: 0.45rem; overflow-x: auto; scroll-behavior: auto; padding: 0.02rem 0.3rem 0.05rem; -ms-overflow-style: none; scrollbar-width: none; }",
       ".trusted-clients-track::-webkit-scrollbar { display: none; }",
+      ".trusted-clients-scrollbar { position: relative; height: 12px; width: min(520px, 92%); margin: 0.2rem auto 0; border-radius: 999px; background: rgba(255,255,255,0.2); cursor: pointer; }",
+      ".trusted-clients-scrollbar-thumb { position: absolute; top: 1px; left: 0; height: 10px; width: 112px; border-radius: 999px; background: rgba(255,255,255,0.9); box-shadow: 0 1px 8px rgba(0,0,0,0.3); cursor: grab; }",
+      ".trusted-clients-scrollbar.dragging .trusted-clients-scrollbar-thumb { cursor: grabbing; }",
       ".trusted-clients-slide { flex: 0 0 auto; border: 0 !important; background: transparent !important; padding: 0 !important; box-shadow: none !important; }",
       ".trusted-clients-group { display: flex; align-items: center; justify-content: center; min-height: 176px; }",
       ".trusted-clients-logo-link { display: inline-flex; align-items: center; justify-content: center; padding: 0 0.28rem; transition: transform 0.25s ease, opacity 0.25s ease, filter 0.25s ease; opacity: 0.95; }",
       ".trusted-clients-logo-link:hover, .trusted-clients-logo-link:focus-visible { transform: translateY(-2px) scale(1.04); opacity: 1; filter: drop-shadow(0 0 14px rgba(255,255,255,0.22)); }",
       ".trusted-clients-logo-img { display: block; height: clamp(160px, 14vw, 230px); width: auto; max-width: none; object-fit: contain; }",
       ".trusted-clients-separator { display: inline-block; width: 2px; height: 116px; margin: 0 0.32rem; background: rgba(255,255,255,0.92); box-shadow: 0 0 10px rgba(255,255,255,0.28); }",
-      "@media (max-width: 900px) { .trusted-clients-track { gap: 0.3rem; padding-left: 0.2rem; padding-right: 0.2rem; } .trusted-clients-group { min-height: 146px; } .trusted-clients-logo-img { height: clamp(120px, 16vw, 170px); } .trusted-clients-separator { height: 92px; margin: 0 0.24rem; } }",
-      "@media (max-width: 640px) { .trusted-clients-carousel { padding: 0; } .trusted-clients-track { gap: 0.15rem; padding: 0.01rem 0.08rem; } .trusted-clients-group { min-height: 118px; } .trusted-clients-logo-link { padding: 0 0.06rem; } .trusted-clients-logo-img { height: clamp(95px, 20vw, 140px); } .trusted-clients-separator { height: 72px; margin: 0 0.12rem; } }"
+      "@media (max-width: 900px) { .trusted-clients-track { gap: 0.3rem; padding-left: 0.2rem; padding-right: 0.2rem; } .trusted-clients-group { min-height: 146px; } .trusted-clients-logo-img { height: clamp(120px, 16vw, 170px); } .trusted-clients-separator { height: 92px; margin: 0 0.24rem; } .trusted-clients-scrollbar { width: min(420px, 90%); } .trusted-clients-scrollbar-thumb { width: 96px; } }",
+      "@media (max-width: 640px) { .trusted-clients-carousel { padding: 0; } .trusted-clients-track { gap: 0.15rem; padding: 0.01rem 0.08rem; } .trusted-clients-group { min-height: 118px; } .trusted-clients-logo-link { padding: 0 0.06rem; } .trusted-clients-logo-img { height: clamp(95px, 20vw, 140px); } .trusted-clients-separator { height: 72px; margin: 0 0.12rem; } .trusted-clients-scrollbar { width: 84%; margin-top: 0.1rem; } .trusted-clients-scrollbar-thumb { width: 72px; } }"
     ].join("\n");
     document.head.appendChild(style);
   }
@@ -192,6 +195,39 @@
 
     if (!baseSlidesCount) return;
 
+    var scrollbar = wrapper.querySelector(".trusted-clients-scrollbar");
+    var thumb = wrapper.querySelector(".trusted-clients-scrollbar-thumb");
+    var isScrollbarDragging = false;
+    var scrollbarDragOffsetX = 0;
+
+    function getLoopWidth() {
+      return track.scrollWidth / 2;
+    }
+
+    function getNormalizedProgress() {
+      var loopWidth = getLoopWidth();
+      if (!loopWidth) return 0;
+      var normalized = track.scrollLeft % loopWidth;
+      return normalized < 0 ? normalized + loopWidth : normalized;
+    }
+
+    function setTrackFromProgress(progressRatio) {
+      var loopWidth = getLoopWidth();
+      if (!loopWidth) return;
+      var safeRatio = Math.max(0, Math.min(1, progressRatio));
+      track.scrollLeft = safeRatio * loopWidth;
+    }
+
+    function updateScrollbarThumb() {
+      if (!scrollbar || !thumb || isScrollbarDragging) return;
+      var railWidth = scrollbar.clientWidth;
+      var thumbWidth = thumb.clientWidth;
+      var maxLeft = Math.max(0, railWidth - thumbWidth);
+      var loopWidth = getLoopWidth();
+      var ratio = loopWidth ? getNormalizedProgress() / loopWidth : 0;
+      thumb.style.left = (ratio * maxLeft) + "px";
+    }
+
     function animate() {
       if (!isDragging && !isPausedByBackgroundControl) {
         track.scrollLeft += speedPixelsPerFrame;
@@ -221,6 +257,7 @@
       if (!isDragging) return;
       var deltaX = event.clientX - dragStartX;
       track.scrollLeft = dragStartScrollLeft - deltaX;
+      updateScrollbarThumb();
     }
 
     function endDrag() {
@@ -252,6 +289,56 @@
       event.preventDefault();
     });
 
+    function updateTrackFromScrollbarClientX(clientX) {
+      if (!scrollbar || !thumb) return;
+      var rect = scrollbar.getBoundingClientRect();
+      var railWidth = rect.width;
+      var thumbWidth = thumb.clientWidth;
+      var maxLeft = Math.max(0, railWidth - thumbWidth);
+      var left = Math.max(0, Math.min(maxLeft, clientX - rect.left - scrollbarDragOffsetX));
+      thumb.style.left = left + "px";
+      var ratio = maxLeft ? left / maxLeft : 0;
+      setTrackFromProgress(ratio);
+    }
+
+    function startScrollbarDrag(event) {
+      if (!scrollbar || !thumb || event.button !== 0) return;
+      isScrollbarDragging = true;
+      isDragging = true;
+      scrollbar.classList.add("dragging");
+      var thumbRect = thumb.getBoundingClientRect();
+      scrollbarDragOffsetX = event.clientX - thumbRect.left;
+      event.preventDefault();
+    }
+
+    function moveScrollbarDrag(event) {
+      if (!isScrollbarDragging) return;
+      updateTrackFromScrollbarClientX(event.clientX);
+    }
+
+    function endScrollbarDrag() {
+      if (!isScrollbarDragging) return;
+      isScrollbarDragging = false;
+      isDragging = false;
+      scrollbar.classList.remove("dragging");
+    }
+
+    if (scrollbar && thumb) {
+      thumb.addEventListener("mousedown", startScrollbarDrag);
+      scrollbar.addEventListener("mousedown", function (event) {
+        if (event.target === thumb || event.button !== 0) return;
+        var thumbRect = thumb.getBoundingClientRect();
+        scrollbarDragOffsetX = thumbRect.width / 2;
+        updateTrackFromScrollbarClientX(event.clientX);
+      });
+      window.addEventListener("mousemove", moveScrollbarDrag);
+      window.addEventListener("mouseup", endScrollbarDrag);
+      window.addEventListener("mouseleave", endScrollbarDrag);
+      track.addEventListener("scroll", updateScrollbarThumb, { passive: true });
+      window.addEventListener("resize", updateScrollbarThumb);
+      setTimeout(updateScrollbarThumb, 0);
+    }
+
     if (section) {
       var controls = section.querySelectorAll(".background-pause-button");
       controls.forEach(function (button) {
@@ -277,6 +364,8 @@
   function createTrustedClientsCarousel(logos, section) {
     var wrapper = document.createElement("div");
     var track = document.createElement("div");
+    var scrollbar = document.createElement("div");
+    var scrollbarThumb = document.createElement("div");
     var logoLookup = {};
 
     logos.forEach(function (logo) {
@@ -285,13 +374,17 @@
 
     wrapper.className = "trusted-clients-carousel";
     track.className = "trusted-clients-track";
+    scrollbar.className = "trusted-clients-scrollbar";
+    scrollbarThumb.className = "trusted-clients-scrollbar-thumb";
 
     logos.forEach(function (logo) {
       if (logo.hideFromCarousel) return;
       track.appendChild(createLogoSlide(logo, logoLookup));
     });
 
+    scrollbar.appendChild(scrollbarThumb);
     wrapper.appendChild(track);
+    wrapper.appendChild(scrollbar);
     startCarouselAutoscroll(wrapper, track, section);
 
     return wrapper;
