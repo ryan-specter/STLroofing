@@ -218,40 +218,44 @@
     var dragStartScrollLeft = 0;
     var suppressClickUntil = 0;
     var isPausedByBackgroundControl = false;
+    var baseSlidesCount = track.children.length;
     var speedPixelsPerFrame = 0.35;
-    var autoDirection = 1;
-    var dragDeltaX = 0;
 
-    if (!track.children.length) return;
+    if (!baseSlidesCount) return;
 
     var scrollbar = wrapper.querySelector(".trusted-clients-scrollbar");
     var thumb = wrapper.querySelector(".trusted-clients-scrollbar-thumb");
     var isScrollbarDragging = false;
     var scrollbarDragOffsetX = 0;
 
-    function getScrollMax() {
-      return Math.max(0, track.scrollWidth - track.clientWidth);
+    function getLoopWidth() {
+      return track.scrollWidth / 2;
     }
 
-    function clampScrollPosition(rawPosition) {
-      var maxScroll = getScrollMax();
-      return Math.max(0, Math.min(maxScroll, rawPosition));
+    function normalizeLoopPosition(rawPosition) {
+      var loopWidth = getLoopWidth();
+      if (!loopWidth) return 0;
+      var normalized = rawPosition % loopWidth;
+      if (normalized < 0) normalized += loopWidth;
+      return normalized;
     }
 
-    function setScrollPosition(rawPosition) {
-      track.scrollLeft = clampScrollPosition(rawPosition);
+    function setLoopScrollPosition(rawPosition) {
+      track.scrollLeft = normalizeLoopPosition(rawPosition);
     }
 
     function getNormalizedProgressRatio() {
-      var maxScroll = getScrollMax();
-      if (!maxScroll) return 0;
-      return track.scrollLeft / maxScroll;
+      var loopWidth = getLoopWidth();
+      if (!loopWidth) return 0;
+      var normalized = track.scrollLeft % loopWidth;
+      return (normalized < 0 ? normalized + loopWidth : normalized) / loopWidth;
     }
 
     function setTrackFromProgressRatio(progressRatio) {
-      var maxScroll = getScrollMax();
+      var loopWidth = getLoopWidth();
+      if (!loopWidth) return;
       var safeRatio = Math.max(0, Math.min(1, progressRatio));
-      track.scrollLeft = safeRatio * maxScroll;
+      track.scrollLeft = safeRatio * loopWidth;
     }
 
     function updateScrollbarThumb() {
@@ -265,16 +269,7 @@
 
     function animate() {
       if (!isDragging && !isPausedByBackgroundControl) {
-        var maxScroll = getScrollMax();
-        var next = track.scrollLeft + (speedPixelsPerFrame * autoDirection);
-        if (next >= maxScroll) {
-          next = maxScroll;
-          autoDirection = -1;
-        } else if (next <= 0) {
-          next = 0;
-          autoDirection = 1;
-        }
-        setScrollPosition(next);
+        setLoopScrollPosition(track.scrollLeft + speedPixelsPerFrame);
       }
       window.requestAnimationFrame(animate);
     }
@@ -288,7 +283,6 @@
       isDragging = true;
       dragStartX = event.clientX;
       dragStartScrollLeft = track.scrollLeft;
-      dragDeltaX = 0;
       wrapper.classList.add("dragging");
       track.style.cursor = "grabbing";
       track.style.userSelect = "none";
@@ -298,8 +292,7 @@
     function moveDrag(event) {
       if (!isDragging) return;
       var deltaX = event.clientX - dragStartX;
-      dragDeltaX = deltaX;
-      setScrollPosition(dragStartScrollLeft - deltaX);
+      setLoopScrollPosition(dragStartScrollLeft - deltaX);
       updateScrollbarThumb();
     }
 
@@ -313,9 +306,6 @@
 
       if (dragDistance > 8) {
         suppressClickUntil = Date.now() + 250;
-      }
-      if (dragDistance > 2) {
-        autoDirection = dragDeltaX < 0 ? 1 : -1;
       }
     }
 
@@ -367,8 +357,6 @@
       isScrollbarDragging = false;
       isDragging = false;
       scrollbar.classList.remove("dragging");
-      var ratio = getNormalizedProgressRatio();
-      autoDirection = ratio >= 0.999 ? -1 : 1;
     }
 
     if (scrollbar && thumb) {
@@ -400,6 +388,10 @@
         observer.observe(button, { attributes: true, attributeFilter: ["class", "style", "aria-label"] });
       });
       syncWithBackgroundControls();
+    }
+
+    for (var i = 0; i < baseSlidesCount; i += 1) {
+      track.appendChild(track.children[i].cloneNode(true));
     }
 
     window.requestAnimationFrame(animate);
@@ -452,9 +444,8 @@
     var isLayerAActive = true;
     var updatePending = false;
     var isPausedByBackgroundControl = false;
-    var wideImageRatioThreshold = 2;
-    var panRangePercent = 20;
-    var maxPanRangePercent = 30;
+    var baseParallaxRangePercent = 4;
+    var maxParallaxRangePercent = 30;
     var imageMetaByUrl = {};
     var lastRenderedProgress = -1;
     var panProgress = 0;
@@ -483,31 +474,46 @@
     }
 
     function getLoopWidth() {
-      return Math.max(1, track.scrollWidth - track.clientWidth);
+      return Math.max(1, track.scrollWidth / 2);
     }
 
     function getNormalizedScrollDelta(current, previous, loopWidth) {
-      return current - previous;
+      var delta = current - previous;
+      if (delta > loopWidth / 2) return delta - loopWidth;
+      if (delta < -loopWidth / 2) return delta + loopWidth;
+      return delta;
     }
 
     function setLayerBackgroundPosition(layer, logoId, progress) {
       var imageUrl = backgroundByLogoId[logoId];
       var imageMeta = imageUrl && imageMetaByUrl[imageUrl];
       var phase = typeof progress === "number" ? progress : getNormalizedTrackProgress();
+      var viewportRatio;
+      var horizontalPressure;
+      var verticalPressure;
+      var horizontalRange;
+      var verticalRange;
       var xPos;
-      var dynamicPanRange = panRangePercent;
+      var yPos;
 
-      if (!logoId || !imageUrl || !imageMeta || !imageMeta.isWide) {
+      if (!logoId || !imageUrl || !imageMeta) {
         layer.style.backgroundPosition = "center center";
         return;
       }
 
-      if (imageMeta.ratio > wideImageRatioThreshold) {
-        dynamicPanRange = Math.min(maxPanRangePercent, panRangePercent + ((imageMeta.ratio - wideImageRatioThreshold) * 4));
-      }
-      // Move rightward while logos move leftward.
-      xPos = 50 + ((phase * 2) - 1) * dynamicPanRange;
-      layer.style.backgroundPosition = xPos.toFixed(2) + "% center";
+      viewportRatio = Math.max(0.35, window.innerWidth / Math.max(window.innerHeight, 1));
+
+      // If image is wider than viewport crop, pan mostly on X. If taller, pan mostly on Y.
+      horizontalPressure = Math.max(0, (imageMeta.ratio / viewportRatio) - 1);
+      verticalPressure = Math.max(0, (viewportRatio / imageMeta.ratio) - 1);
+
+      horizontalRange = Math.min(maxParallaxRangePercent, baseParallaxRangePercent + (horizontalPressure * 22));
+      verticalRange = Math.min(maxParallaxRangePercent, baseParallaxRangePercent + (verticalPressure * 22));
+
+      // Move opposite to leftward logo motion.
+      xPos = 50 + ((phase * 2) - 1) * horizontalRange;
+      yPos = 50 + ((phase * 2) - 1) * verticalRange;
+      layer.style.backgroundPosition = xPos.toFixed(2) + "% " + yPos.toFixed(2) + "%";
     }
 
     function ensureImageMeta(imageUrl) {
@@ -517,10 +523,10 @@
       var image = new Image();
       image.onload = function () {
         var ratio = image.naturalWidth && image.naturalHeight ? (image.naturalWidth / image.naturalHeight) : 1;
-        imageMetaByUrl[imageUrl] = { isWide: ratio >= wideImageRatioThreshold, ratio: ratio, ready: true };
+        imageMetaByUrl[imageUrl] = { ratio: ratio, ready: true };
       };
       image.onerror = function () {
-        imageMetaByUrl[imageUrl] = { isWide: false, ratio: 1, ready: true };
+        imageMetaByUrl[imageUrl] = { ratio: 1, ready: true };
       };
       image.src = imageUrl;
     }
