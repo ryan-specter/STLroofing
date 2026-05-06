@@ -422,6 +422,12 @@
     var hoverLogoId = null;
     var isLayerAActive = true;
     var updatePending = false;
+    var isPausedByBackgroundControl = false;
+    var wideImageRatioThreshold = 2;
+    var panRangePercent = 14;
+    var panSpeedPerFrame = 0.0007;
+    var imageMetaByUrl = {};
+    var panStateByLogoId = {};
     var backdrop;
     var layerA;
     var layerB;
@@ -439,6 +445,46 @@
     layerA = backdrop.children[0];
     layerB = backdrop.children[1];
 
+    function setLayerBackgroundPosition(layer, logoId) {
+      var imageUrl = backgroundByLogoId[logoId];
+      var imageMeta = imageUrl && imageMetaByUrl[imageUrl];
+      var panState = panStateByLogoId[logoId];
+      var phase;
+      var xPos;
+
+      if (!logoId || !imageUrl || !imageMeta || !imageMeta.isWide || !panState) {
+        layer.style.backgroundPosition = "center center";
+        return;
+      }
+
+      phase = panState.phase;
+      // Move rightward while logos move leftward.
+      xPos = 50 + ((phase * 2) - 1) * panRangePercent;
+      layer.style.backgroundPosition = xPos.toFixed(2) + "% center";
+    }
+
+    function ensureImageMeta(imageUrl) {
+      if (!imageUrl || imageMetaByUrl[imageUrl]) return;
+
+      imageMetaByUrl[imageUrl] = { isWide: false, ready: false };
+      var image = new Image();
+      image.onload = function () {
+        var ratio = image.naturalWidth && image.naturalHeight ? (image.naturalWidth / image.naturalHeight) : 1;
+        imageMetaByUrl[imageUrl] = {
+          isWide: ratio >= wideImageRatioThreshold,
+          ready: true
+        };
+      };
+      image.onerror = function () {
+        imageMetaByUrl[imageUrl] = { isWide: false, ready: true };
+      };
+      image.src = imageUrl;
+    }
+
+    function syncWithBackgroundControls() {
+      isPausedByBackgroundControl = isBackgroundAnimationPaused(section);
+    }
+
     function applyBackgroundForLogo(logoId) {
       var imageUrl = backgroundByLogoId[logoId];
       var incomingLayer;
@@ -452,12 +498,21 @@
         layerB.classList.remove("is-active");
         layerA.style.backgroundImage = "";
         layerB.style.backgroundImage = "";
+        layerA.style.backgroundPosition = "center center";
+        layerB.style.backgroundPosition = "center center";
         return;
       }
+
+      if (!panStateByLogoId[logoId]) {
+        panStateByLogoId[logoId] = { phase: Math.random() };
+      }
+      ensureImageMeta(imageUrl);
 
       incomingLayer = isLayerAActive ? layerB : layerA;
       outgoingLayer = isLayerAActive ? layerA : layerB;
       incomingLayer.style.backgroundImage = "url('" + imageUrl + "')";
+      incomingLayer.setAttribute("data-logo-id", logoId);
+      setLayerBackgroundPosition(incomingLayer, logoId);
       outgoingLayer.classList.remove("is-active");
       incomingLayer.classList.add("is-active");
       isLayerAActive = !isLayerAActive;
@@ -508,6 +563,44 @@
         scheduleBackdropUpdate();
       }
     });
+
+    function animateBackdropPan() {
+      var visibleLogoIdA = layerA.getAttribute("data-logo-id");
+      var visibleLogoIdB = layerB.getAttribute("data-logo-id");
+      var updated = {};
+
+      if (!isPausedByBackgroundControl) {
+        [visibleLogoIdA, visibleLogoIdB].forEach(function (logoId) {
+          if (!logoId || updated[logoId]) return;
+          if (!panStateByLogoId[logoId]) {
+            panStateByLogoId[logoId] = { phase: Math.random() };
+          }
+          panStateByLogoId[logoId].phase += panSpeedPerFrame;
+          if (panStateByLogoId[logoId].phase > 1) {
+            panStateByLogoId[logoId].phase -= 1;
+          }
+          updated[logoId] = true;
+        });
+      }
+
+      setLayerBackgroundPosition(layerA, visibleLogoIdA);
+      setLayerBackgroundPosition(layerB, visibleLogoIdB);
+      window.requestAnimationFrame(animateBackdropPan);
+    }
+
+    var controls = section.querySelectorAll(".background-pause-button");
+    controls.forEach(function (button) {
+      button.addEventListener("click", function () {
+        setTimeout(syncWithBackgroundControls, 0);
+      });
+    });
+
+    var pauseObserver = new MutationObserver(syncWithBackgroundControls);
+    controls.forEach(function (button) {
+      pauseObserver.observe(button, { attributes: true, attributeFilter: ["class", "style", "aria-label"] });
+    });
+    syncWithBackgroundControls();
+    window.requestAnimationFrame(animateBackdropPan);
 
     track.addEventListener("scroll", scheduleBackdropUpdate, { passive: true });
     window.addEventListener("resize", scheduleBackdropUpdate);
