@@ -16,6 +16,13 @@
   };
   var logosManifestPath = "images/business-logos/logos.json";
   var logosCarouselStyleId = "trusted-clients-carousel-styles";
+  var fallbackLogos = [
+    { id: "albert_bartlett", name: "Albert Bartlett", website: "https://albertbartlett.co.uk/", image: "albert_bartlett.png" },
+    { id: "tms_fm", name: "TMS Facilities Management", website: "https://tmsfm.co.uk/about-us/", image: "tms_fm.png", hideFromCarousel: true },
+    { id: "animal_cromer", name: "Animal (Cromer)", website: "https://www.animal.co.uk/pages/animal-store-information", image: "animal_cromer.png", linkedLogos: ["tms_fm"] },
+    { id: "mundesley_parish_council", name: "Mundesley Parish Council", website: "https://www.mundesley-pc.gov.uk/", image: "mundesley_parish_council.png" },
+    { id: "watsons_property", name: "Watsons Property Group", website: "https://www.watsons-property.co.uk/", image: "watsons_property.png" }
+  ];
 
   function decodeHtml(value) {
     var textarea = document.createElement("textarea");
@@ -290,6 +297,19 @@
     return wrapper;
   }
 
+  function renderTrustedClientsIntoBlock(instagramBlock, logos) {
+    ensureLogosCarouselStyles();
+    var blockContent = instagramBlock.querySelector(".sqs-block-content");
+    if (!blockContent) return;
+
+    blockContent.innerHTML = "";
+    blockContent.appendChild(createTrustedClientsCarousel(logos, instagramBlock.closest(".page-section")));
+    updateTrustedClientsHeading(instagramBlock);
+    instagramBlock.classList.remove("sqs-block-instagram", "instagram-block");
+    instagramBlock.classList.add("trusted-clients-block");
+    instagramBlock.setAttribute("data-github-pages-logos", "ready");
+  }
+
   function updateTrustedClientsHeading(instagramBlock) {
     var textBlock = instagramBlock && instagramBlock.parentElement && instagramBlock.parentElement.previousElementSibling;
     if (!textBlock) return;
@@ -313,22 +333,12 @@
         return response.json();
       })
       .then(function (manifest) {
-        if (!manifest || !Array.isArray(manifest.logos) || !manifest.logos.length) return;
-
-        ensureLogosCarouselStyles();
-
-        var blockContent = instagramBlock.querySelector(".sqs-block-content");
-        if (!blockContent) return;
-
-        blockContent.innerHTML = "";
-        blockContent.appendChild(createTrustedClientsCarousel(manifest.logos, instagramBlock.closest(".page-section")));
-        updateTrustedClientsHeading(instagramBlock);
-        instagramBlock.classList.remove("sqs-block-instagram", "instagram-block");
-        instagramBlock.classList.add("trusted-clients-block");
-        instagramBlock.setAttribute("data-github-pages-logos", "ready");
+        var logos = manifest && Array.isArray(manifest.logos) && manifest.logos.length ? manifest.logos : fallbackLogos;
+        renderTrustedClientsIntoBlock(instagramBlock, logos);
       })
       .catch(function (error) {
         console.warn(error);
+        renderTrustedClientsIntoBlock(instagramBlock, fallbackLogos);
       });
   }
 
