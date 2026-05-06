@@ -448,6 +448,8 @@
     var maxPanRangePercent = 30;
     var imageMetaByUrl = {};
     var lastRenderedProgress = -1;
+    var panProgress = 0;
+    var lastTrackScrollLeft = track.scrollLeft;
     var backdrop;
     var layerA;
     var layerB;
@@ -466,10 +468,20 @@
     layerB = backdrop.children[1];
 
     function getNormalizedTrackProgress() {
-      var loopWidth = Math.max(1, track.scrollWidth / 2);
-      var normalized = track.scrollLeft % loopWidth;
-      if (normalized < 0) normalized += loopWidth;
-      return normalized / loopWidth;
+      var normalized = panProgress % 1;
+      if (normalized < 0) normalized += 1;
+      return normalized;
+    }
+
+    function getLoopWidth() {
+      return Math.max(1, track.scrollWidth / 2);
+    }
+
+    function getNormalizedScrollDelta(current, previous, loopWidth) {
+      var delta = current - previous;
+      if (delta > loopWidth / 2) return delta - loopWidth;
+      if (delta < -loopWidth / 2) return delta + loopWidth;
+      return delta;
     }
 
     function setLayerBackgroundPosition(layer, logoId, progress) {
@@ -590,7 +602,18 @@
     function animateBackdropPan() {
       var visibleLogoIdA = layerA.getAttribute("data-logo-id");
       var visibleLogoIdB = layerB.getAttribute("data-logo-id");
-      var progress = getNormalizedTrackProgress();
+      var loopWidth = getLoopWidth();
+      var currentScrollLeft = track.scrollLeft;
+      var scrollDelta = getNormalizedScrollDelta(currentScrollLeft, lastTrackScrollLeft, loopWidth);
+      var progressDelta = scrollDelta / loopWidth;
+      var progress;
+      lastTrackScrollLeft = currentScrollLeft;
+
+      if (!isPausedByBackgroundControl || Math.abs(progressDelta) > 0.000001) {
+        panProgress += progressDelta;
+      }
+
+      progress = getNormalizedTrackProgress();
 
       if (!isPausedByBackgroundControl || progress !== lastRenderedProgress) {
         setLayerBackgroundPosition(layerA, visibleLogoIdA, progress);
