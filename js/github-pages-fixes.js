@@ -114,6 +114,8 @@
       ".trusted-clients-brand-layer.is-active { opacity: 0.58; }",
       ".trusted-clients-heading-fe-block, .trusted-clients-fe-block, .trusted-clients-following-fe-block { position: relative; z-index: 3; }",
       ".trusted-clients-fe-block, .trusted-clients-fe-block .sqs-block, .trusted-clients-fe-block .sqs-block-content { min-height: 0 !important; }",
+      ".trusted-clients-fe-block { width: 100vw !important; margin-left: calc(50% - 50vw) !important; }",
+      ".trusted-clients-fe-block .sqs-block-content { width: 100% !important; overflow: visible !important; }",
       ".trusted-clients-heading-fe-block .sqs-html-content, .trusted-clients-heading-fe-block .sqs-block-content { padding-bottom: 0 !important; margin-bottom: 0 !important; }",
       ".trusted-clients-following-fe-block .sqs-html-content, .trusted-clients-following-fe-block .sqs-block-content { padding-top: 0 !important; margin-top: 0 !important; }",
       ".trusted-clients-block, .trusted-clients-block .sqs-block-content { margin: 0 !important; padding: 0 !important; min-height: 0 !important; }",
@@ -121,7 +123,7 @@
       ".trusted-clients-block .sqs-block-content { line-height: 0; }",
       ".trusted-clients-block + .fe-block .sqs-html-content p { margin-bottom: 0.08rem !important; }",
       ".trusted-clients-block .trusted-clients-nav { display: none !important; }",
-      ".trusted-clients-carousel { position: relative; width: 100%; overflow: hidden; padding: 0; margin-top: -0.5rem; margin-bottom: -0.95rem; }",
+      ".trusted-clients-carousel { position: relative; width: 100%; overflow: visible; padding: 0; margin-top: -0.5rem; margin-bottom: -0.95rem; }",
       ".trusted-clients-track { display: flex; gap: 0.14rem; overflow-x: auto; scroll-behavior: auto; padding: 0; -ms-overflow-style: none; scrollbar-width: none; }",
       ".trusted-clients-track::-webkit-scrollbar { display: none; }",
       ".trusted-clients-scrollbar { position: relative; height: 12px; width: min(520px, 92%); margin: 0 auto 0; border-radius: 999px; background: rgba(255,255,255,0.2); cursor: pointer; }",
@@ -133,8 +135,8 @@
       ".trusted-clients-logo-link:hover, .trusted-clients-logo-link:focus-visible { transform: translateY(-2px) scale(1.04); opacity: 1; filter: drop-shadow(0 0 14px rgba(255,255,255,0.22)); }",
       ".trusted-clients-logo-img { display: block; height: clamp(230px, 20vw, 340px); width: auto; max-width: none; object-fit: contain; }",
       ".trusted-clients-separator { display: inline-block; width: 2px; height: 152px; margin: 0 0.2rem; background: rgba(255,255,255,0.92); box-shadow: 0 0 10px rgba(255,255,255,0.28); }",
-      "@media (max-width: 900px) { .trusted-clients-block { margin-top: -0.75rem !important; margin-bottom: -1.05rem !important; } .trusted-clients-carousel { margin-top: -0.35rem; margin-bottom: -0.7rem; } .trusted-clients-track { gap: 0.1rem; padding: 0 0.06rem; } .trusted-clients-group { min-height: 196px; } .trusted-clients-logo-img { height: clamp(178px, 24vw, 270px); } .trusted-clients-separator { height: 136px; margin: 0 0.12rem; } .trusted-clients-scrollbar { width: min(420px, 90%); margin-top: 0; } .trusted-clients-scrollbar-thumb { width: 96px; } }",
-      "@media (max-width: 640px) { .trusted-clients-block { margin-top: -0.45rem !important; margin-bottom: -0.75rem !important; } .trusted-clients-carousel { padding: 0; margin-top: -0.2rem; margin-bottom: -0.45rem; } .trusted-clients-track { gap: 0.06rem; padding: 0 0.02rem; } .trusted-clients-group { min-height: 164px; } .trusted-clients-logo-link { padding: 0 0.02rem; } .trusted-clients-logo-img { height: clamp(150px, 32vw, 228px); } .trusted-clients-separator { height: 114px; margin: 0 0.06rem; } .trusted-clients-scrollbar { width: 84%; margin-top: 0; } .trusted-clients-scrollbar-thumb { width: 72px; } }"
+      "@media (max-width: 900px) { .trusted-clients-fe-block { width: 100vw !important; margin-left: calc(50% - 50vw) !important; } .trusted-clients-block { margin-top: -0.75rem !important; margin-bottom: -1.05rem !important; } .trusted-clients-carousel { margin-top: -0.35rem; margin-bottom: -0.7rem; } .trusted-clients-track { gap: 0.1rem; padding: 0; } .trusted-clients-group { min-height: 196px; } .trusted-clients-logo-img { height: clamp(178px, 24vw, 270px); } .trusted-clients-separator { height: 136px; margin: 0 0.12rem; } .trusted-clients-scrollbar { width: min(420px, 90%); margin-top: 0; } .trusted-clients-scrollbar-thumb { width: 96px; } }",
+      "@media (max-width: 640px) { .trusted-clients-fe-block { width: 100vw !important; margin-left: calc(50% - 50vw) !important; } .trusted-clients-block { margin-top: -0.45rem !important; margin-bottom: -0.75rem !important; } .trusted-clients-carousel { padding: 0; margin-top: -0.2rem; margin-bottom: -0.45rem; } .trusted-clients-track { gap: 0.06rem; padding: 0; } .trusted-clients-group { min-height: 164px; } .trusted-clients-logo-link { padding: 0 0.02rem; } .trusted-clients-logo-img { height: clamp(150px, 32vw, 228px); } .trusted-clients-separator { height: 114px; margin: 0 0.06rem; } .trusted-clients-scrollbar { width: 84%; margin-top: 0; } .trusted-clients-scrollbar-thumb { width: 72px; } }"
     ].join("\n");
     document.head.appendChild(style);
   }
@@ -216,44 +218,40 @@
     var dragStartScrollLeft = 0;
     var suppressClickUntil = 0;
     var isPausedByBackgroundControl = false;
-    var baseSlidesCount = track.children.length;
     var speedPixelsPerFrame = 0.35;
+    var autoDirection = 1;
+    var dragDeltaX = 0;
 
-    if (!baseSlidesCount) return;
+    if (!track.children.length) return;
 
     var scrollbar = wrapper.querySelector(".trusted-clients-scrollbar");
     var thumb = wrapper.querySelector(".trusted-clients-scrollbar-thumb");
     var isScrollbarDragging = false;
     var scrollbarDragOffsetX = 0;
 
-    function getLoopWidth() {
-      return track.scrollWidth / 2;
+    function getScrollMax() {
+      return Math.max(0, track.scrollWidth - track.clientWidth);
     }
 
-    function normalizeLoopPosition(rawPosition) {
-      var loopWidth = getLoopWidth();
-      if (!loopWidth) return 0;
-      var normalized = rawPosition % loopWidth;
-      if (normalized < 0) normalized += loopWidth;
-      return normalized;
+    function clampScrollPosition(rawPosition) {
+      var maxScroll = getScrollMax();
+      return Math.max(0, Math.min(maxScroll, rawPosition));
     }
 
-    function setLoopScrollPosition(rawPosition) {
-      track.scrollLeft = normalizeLoopPosition(rawPosition);
+    function setScrollPosition(rawPosition) {
+      track.scrollLeft = clampScrollPosition(rawPosition);
     }
 
-    function getNormalizedProgress() {
-      var loopWidth = getLoopWidth();
-      if (!loopWidth) return 0;
-      var normalized = track.scrollLeft % loopWidth;
-      return normalized < 0 ? normalized + loopWidth : normalized;
+    function getNormalizedProgressRatio() {
+      var maxScroll = getScrollMax();
+      if (!maxScroll) return 0;
+      return track.scrollLeft / maxScroll;
     }
 
-    function setTrackFromProgress(progressRatio) {
-      var loopWidth = getLoopWidth();
-      if (!loopWidth) return;
+    function setTrackFromProgressRatio(progressRatio) {
+      var maxScroll = getScrollMax();
       var safeRatio = Math.max(0, Math.min(1, progressRatio));
-      track.scrollLeft = safeRatio * loopWidth;
+      track.scrollLeft = safeRatio * maxScroll;
     }
 
     function updateScrollbarThumb() {
@@ -261,14 +259,22 @@
       var railWidth = scrollbar.clientWidth;
       var thumbWidth = thumb.clientWidth;
       var maxLeft = Math.max(0, railWidth - thumbWidth);
-      var loopWidth = getLoopWidth();
-      var ratio = loopWidth ? getNormalizedProgress() / loopWidth : 0;
+      var ratio = getNormalizedProgressRatio();
       thumb.style.left = (ratio * maxLeft) + "px";
     }
 
     function animate() {
       if (!isDragging && !isPausedByBackgroundControl) {
-        setLoopScrollPosition(track.scrollLeft + speedPixelsPerFrame);
+        var maxScroll = getScrollMax();
+        var next = track.scrollLeft + (speedPixelsPerFrame * autoDirection);
+        if (next >= maxScroll) {
+          next = maxScroll;
+          autoDirection = -1;
+        } else if (next <= 0) {
+          next = 0;
+          autoDirection = 1;
+        }
+        setScrollPosition(next);
       }
       window.requestAnimationFrame(animate);
     }
@@ -282,6 +288,7 @@
       isDragging = true;
       dragStartX = event.clientX;
       dragStartScrollLeft = track.scrollLeft;
+      dragDeltaX = 0;
       wrapper.classList.add("dragging");
       track.style.cursor = "grabbing";
       track.style.userSelect = "none";
@@ -291,7 +298,8 @@
     function moveDrag(event) {
       if (!isDragging) return;
       var deltaX = event.clientX - dragStartX;
-      setLoopScrollPosition(dragStartScrollLeft - deltaX);
+      dragDeltaX = deltaX;
+      setScrollPosition(dragStartScrollLeft - deltaX);
       updateScrollbarThumb();
     }
 
@@ -305,6 +313,9 @@
 
       if (dragDistance > 8) {
         suppressClickUntil = Date.now() + 250;
+      }
+      if (dragDistance > 2) {
+        autoDirection = dragDeltaX < 0 ? 1 : -1;
       }
     }
 
@@ -333,7 +344,7 @@
       var left = Math.max(0, Math.min(maxLeft, clientX - rect.left - scrollbarDragOffsetX));
       thumb.style.left = left + "px";
       var ratio = maxLeft ? left / maxLeft : 0;
-      setTrackFromProgress(ratio);
+      setTrackFromProgressRatio(ratio);
     }
 
     function startScrollbarDrag(event) {
@@ -356,6 +367,8 @@
       isScrollbarDragging = false;
       isDragging = false;
       scrollbar.classList.remove("dragging");
+      var ratio = getNormalizedProgressRatio();
+      autoDirection = ratio >= 0.999 ? -1 : 1;
     }
 
     if (scrollbar && thumb) {
@@ -387,10 +400,6 @@
         observer.observe(button, { attributes: true, attributeFilter: ["class", "style", "aria-label"] });
       });
       syncWithBackgroundControls();
-    }
-
-    for (var i = 0; i < baseSlidesCount; i += 1) {
-      track.appendChild(track.children[i].cloneNode(true));
     }
 
     window.requestAnimationFrame(animate);
@@ -474,14 +483,11 @@
     }
 
     function getLoopWidth() {
-      return Math.max(1, track.scrollWidth / 2);
+      return Math.max(1, track.scrollWidth - track.clientWidth);
     }
 
     function getNormalizedScrollDelta(current, previous, loopWidth) {
-      var delta = current - previous;
-      if (delta > loopWidth / 2) return delta - loopWidth;
-      if (delta < -loopWidth / 2) return delta + loopWidth;
-      return delta;
+      return current - previous;
     }
 
     function setLayerBackgroundPosition(layer, logoId, progress) {
