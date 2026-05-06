@@ -378,9 +378,14 @@
 
   function resolveBrandBackgroundUrl(rawPath) {
     if (!rawPath) return null;
-    if (/^(https?:)?\/\//i.test(rawPath) || rawPath.indexOf("data:") === 0) return rawPath;
-    if (rawPath.indexOf("/") === 0 || rawPath.indexOf("images/") === 0) return getAssetUrl(rawPath);
-    return getAssetUrl("images/business-logos/" + rawPath);
+    var normalizedPath = String(rawPath).trim();
+
+    // Never allow legacy Instagram preview assets as brand backdrops.
+    if (/image-asset(-\d+)?\.jpe?g/i.test(normalizedPath)) return null;
+
+    if (/^(https?:)?\/\//i.test(normalizedPath) || normalizedPath.indexOf("data:") === 0) return normalizedPath;
+    if (normalizedPath.indexOf("/") === 0 || normalizedPath.indexOf("images/") === 0) return getAssetUrl(normalizedPath);
+    return getAssetUrl("images/business-logos/" + normalizedPath);
   }
 
   function ensureTrustedClientsBackdrop(section) {
@@ -445,6 +450,8 @@
       if (!imageUrl) {
         layerA.classList.remove("is-active");
         layerB.classList.remove("is-active");
+        layerA.style.backgroundImage = "";
+        layerB.style.backgroundImage = "";
         return;
       }
 
