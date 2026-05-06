@@ -98,21 +98,19 @@
     style.id = logosCarouselStyleId;
     style.textContent = [
       ".trusted-clients-block, .trusted-clients-block .sqs-block-content { margin: 0 !important; padding: 0 !important; min-height: 0 !important; }",
+      ".trusted-clients-block + .fe-block .sqs-html-content p { margin-bottom: 0.2rem !important; }",
       ".trusted-clients-block .trusted-clients-nav { display: none !important; }",
-      ".trusted-clients-carousel { position: relative; width: 100%; overflow: hidden; padding: 0.15rem 0 0.2rem; }",
-      ".trusted-clients-carousel::before, .trusted-clients-carousel::after { content: ''; position: absolute; top: 0; bottom: 0; width: 8%; z-index: 2; pointer-events: none; }",
-      ".trusted-clients-carousel::before { left: 0; background: linear-gradient(90deg, rgba(0,0,0,0.7), rgba(0,0,0,0)); }",
-      ".trusted-clients-carousel::after { right: 0; background: linear-gradient(270deg, rgba(0,0,0,0.7), rgba(0,0,0,0)); }",
-      ".trusted-clients-track { display: flex; gap: 1.15rem; overflow-x: auto; scroll-behavior: auto; padding: 0.15rem 0; -ms-overflow-style: none; scrollbar-width: none; }",
+      ".trusted-clients-carousel { position: relative; width: 100%; overflow: hidden; padding: 0.05rem 0 0.1rem; -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, transparent 100%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, transparent 100%); }",
+      ".trusted-clients-track { display: flex; gap: 0.8rem; overflow-x: auto; scroll-behavior: auto; padding: 0.05rem 8vw 0.1rem; -ms-overflow-style: none; scrollbar-width: none; }",
       ".trusted-clients-track::-webkit-scrollbar { display: none; }",
       ".trusted-clients-slide { flex: 0 0 auto; border: 0 !important; background: transparent !important; padding: 0 !important; box-shadow: none !important; }",
-      ".trusted-clients-group { display: flex; align-items: center; justify-content: center; min-height: 128px; }",
-      ".trusted-clients-logo-link { display: inline-flex; align-items: center; justify-content: center; padding: 0 0.35rem; transition: transform 0.25s ease, opacity 0.25s ease, filter 0.25s ease; opacity: 0.93; }",
+      ".trusted-clients-group { display: flex; align-items: center; justify-content: center; min-height: 156px; }",
+      ".trusted-clients-logo-link { display: inline-flex; align-items: center; justify-content: center; padding: 0 0.28rem; transition: transform 0.25s ease, opacity 0.25s ease, filter 0.25s ease; opacity: 0.95; }",
       ".trusted-clients-logo-link:hover, .trusted-clients-logo-link:focus-visible { transform: translateY(-2px) scale(1.04); opacity: 1; filter: drop-shadow(0 0 14px rgba(255,255,255,0.22)); }",
-      ".trusted-clients-logo-img { display: block; max-height: 122px; width: auto; max-width: 320px; object-fit: contain; }",
-      ".trusted-clients-separator { display: inline-block; width: 2px; height: 74px; margin: 0 0.55rem; background: rgba(255,255,255,0.92); box-shadow: 0 0 10px rgba(255,255,255,0.28); }",
-      "@media (max-width: 900px) { .trusted-clients-track { gap: 0.95rem; } .trusted-clients-group { min-height: 108px; } .trusted-clients-logo-img { max-height: 96px; max-width: 250px; } .trusted-clients-separator { height: 62px; } }",
-      "@media (max-width: 640px) { .trusted-clients-carousel { padding: 0.05rem 0 0.12rem; } .trusted-clients-track { gap: 0.6rem; } .trusted-clients-group { min-height: 88px; } .trusted-clients-logo-link { padding: 0 0.2rem; } .trusted-clients-logo-img { max-height: 78px; max-width: 185px; } .trusted-clients-separator { height: 50px; margin: 0 0.28rem; } }"
+      ".trusted-clients-logo-img { display: block; height: clamp(120px, 11vw, 180px); width: auto; max-width: none; object-fit: contain; }",
+      ".trusted-clients-separator { display: inline-block; width: 2px; height: 96px; margin: 0 0.45rem; background: rgba(255,255,255,0.92); box-shadow: 0 0 10px rgba(255,255,255,0.28); }",
+      "@media (max-width: 900px) { .trusted-clients-track { gap: 0.6rem; padding-left: 5vw; padding-right: 5vw; } .trusted-clients-group { min-height: 132px; } .trusted-clients-logo-img { height: clamp(92px, 12vw, 132px); } .trusted-clients-separator { height: 76px; margin: 0 0.35rem; } }",
+      "@media (max-width: 640px) { .trusted-clients-carousel { padding: 0 0 0.05rem; -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 7%, rgba(0,0,0,1) 93%, transparent 100%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 7%, rgba(0,0,0,1) 93%, transparent 100%); } .trusted-clients-track { gap: 0.45rem; padding: 0.05rem 4vw; } .trusted-clients-group { min-height: 104px; } .trusted-clients-logo-link { padding: 0 0.1rem; } .trusted-clients-logo-img { height: clamp(72px, 16vw, 108px); } .trusted-clients-separator { height: 62px; margin: 0 0.22rem; } }"
     ].join("\n");
     document.head.appendChild(style);
   }
@@ -160,15 +158,32 @@
     return slide;
   }
 
-  function startCarouselAutoscroll(wrapper, track) {
-    var isPaused = false;
+  function isElementVisible(element) {
+    if (!element) return false;
+    var style = window.getComputedStyle(element);
+    return style.display !== "none" && style.visibility !== "hidden" && parseFloat(style.opacity || "1") !== 0;
+  }
+
+  function isBackgroundAnimationPaused(section) {
+    if (!section) return false;
+    var controls = Array.prototype.slice.call(section.querySelectorAll(".background-pause-button"));
+    if (!controls.length) return false;
+
+    var visibleControl = controls.find(isElementVisible) || controls[0];
+    var label = (visibleControl.getAttribute("aria-label") || "").toLowerCase();
+    return label.indexOf("play") !== -1;
+  }
+
+  function startCarouselAutoscroll(wrapper, track, section) {
+    var isPausedByInteraction = false;
+    var isPausedByBackgroundControl = false;
     var baseSlidesCount = track.children.length;
     var speedPixelsPerFrame = 0.35;
 
     if (!baseSlidesCount) return;
 
     function animate() {
-      if (!isPaused) {
+      if (!isPausedByInteraction && !isPausedByBackgroundControl) {
         track.scrollLeft += speedPixelsPerFrame;
         if (track.scrollLeft >= track.scrollWidth / 2) {
           track.scrollLeft = 0;
@@ -177,12 +192,31 @@
       window.requestAnimationFrame(animate);
     }
 
-    wrapper.addEventListener("mouseenter", function () { isPaused = true; });
-    wrapper.addEventListener("mouseleave", function () { isPaused = false; });
-    wrapper.addEventListener("focusin", function () { isPaused = true; });
-    wrapper.addEventListener("focusout", function () { isPaused = false; });
-    wrapper.addEventListener("touchstart", function () { isPaused = true; }, { passive: true });
-    wrapper.addEventListener("touchend", function () { isPaused = false; });
+    function syncWithBackgroundControls() {
+      isPausedByBackgroundControl = isBackgroundAnimationPaused(section);
+    }
+
+    wrapper.addEventListener("mouseenter", function () { isPausedByInteraction = true; });
+    wrapper.addEventListener("mouseleave", function () { isPausedByInteraction = false; });
+    wrapper.addEventListener("focusin", function () { isPausedByInteraction = true; });
+    wrapper.addEventListener("focusout", function () { isPausedByInteraction = false; });
+    wrapper.addEventListener("touchstart", function () { isPausedByInteraction = true; }, { passive: true });
+    wrapper.addEventListener("touchend", function () { isPausedByInteraction = false; });
+
+    if (section) {
+      var controls = section.querySelectorAll(".background-pause-button");
+      controls.forEach(function (button) {
+        button.addEventListener("click", function () {
+          setTimeout(syncWithBackgroundControls, 0);
+        });
+      });
+
+      var observer = new MutationObserver(syncWithBackgroundControls);
+      controls.forEach(function (button) {
+        observer.observe(button, { attributes: true, attributeFilter: ["class", "style", "aria-label"] });
+      });
+      syncWithBackgroundControls();
+    }
 
     for (var i = 0; i < baseSlidesCount; i += 1) {
       track.appendChild(track.children[i].cloneNode(true));
@@ -191,7 +225,7 @@
     window.requestAnimationFrame(animate);
   }
 
-  function createTrustedClientsCarousel(logos) {
+  function createTrustedClientsCarousel(logos, section) {
     var wrapper = document.createElement("div");
     var track = document.createElement("div");
     var logoLookup = {};
@@ -209,7 +243,7 @@
     });
 
     wrapper.appendChild(track);
-    startCarouselAutoscroll(wrapper, track);
+    startCarouselAutoscroll(wrapper, track, section);
 
     return wrapper;
   }
@@ -245,7 +279,7 @@
         if (!blockContent) return;
 
         blockContent.innerHTML = "";
-        blockContent.appendChild(createTrustedClientsCarousel(manifest.logos));
+        blockContent.appendChild(createTrustedClientsCarousel(manifest.logos, instagramBlock.closest(".page-section")));
         updateTrustedClientsHeading(instagramBlock);
         instagramBlock.classList.remove("sqs-block-instagram", "instagram-block");
         instagramBlock.classList.add("trusted-clients-block");
