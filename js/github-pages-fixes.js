@@ -444,10 +444,10 @@
     var updatePending = false;
     var isPausedByBackgroundControl = false;
     var wideImageRatioThreshold = 2;
-    var panRangePercent = 14;
+    var panRangePercent = 20;
+    var maxPanRangePercent = 30;
     var imageMetaByUrl = {};
-    var panStateByLogoId = {};
-    var lastTrackScrollLeft = track.scrollLeft;
+    var lastRenderedProgress = -1;
     var backdrop;
     var layerA;
     var layerB;
@@ -465,21 +465,30 @@
     layerA = backdrop.children[0];
     layerB = backdrop.children[1];
 
-    function setLayerBackgroundPosition(layer, logoId) {
+    function getNormalizedTrackProgress() {
+      var loopWidth = Math.max(1, track.scrollWidth / 2);
+      var normalized = track.scrollLeft % loopWidth;
+      if (normalized < 0) normalized += loopWidth;
+      return normalized / loopWidth;
+    }
+
+    function setLayerBackgroundPosition(layer, logoId, progress) {
       var imageUrl = backgroundByLogoId[logoId];
       var imageMeta = imageUrl && imageMetaByUrl[imageUrl];
-      var panState = panStateByLogoId[logoId];
-      var phase;
+      var phase = typeof progress === "number" ? progress : getNormalizedTrackProgress();
       var xPos;
+      var dynamicPanRange = panRangePercent;
 
-      if (!logoId || !imageUrl || !imageMeta || !imageMeta.isWide || !panState) {
+      if (!logoId || !imageUrl || !imageMeta || !imageMeta.isWide) {
         layer.style.backgroundPosition = "center center";
         return;
       }
 
-      phase = panState.phase;
+      if (imageMeta.ratio > wideImageRatioThreshold) {
+        dynamicPanRange = Math.min(maxPanRangePercent, panRangePercent + ((imageMeta.ratio - wideImageRatioThreshold) * 4));
+      }
       // Move rightward while logos move leftward.
-      xPos = 50 + ((phase * 2) - 1) * panRangePercent;
+      xPos = 50 + ((phase * 2) - 1) * dynamicPanRange;
       layer.style.backgroundPosition = xPos.toFixed(2) + "% center";
     }
 
@@ -490,30 +499,16 @@
       var image = new Image();
       image.onload = function () {
         var ratio = image.naturalWidth && image.naturalHeight ? (image.naturalWidth / image.naturalHeight) : 1;
-        imageMetaByUrl[imageUrl] = {
-          isWide: ratio >= wideImageRatioThreshold,
-          ready: true
-        };
+        imageMetaByUrl[imageUrl] = { isWide: ratio >= wideImageRatioThreshold, ratio: ratio, ready: true };
       };
       image.onerror = function () {
-        imageMetaByUrl[imageUrl] = { isWide: false, ready: true };
+        imageMetaByUrl[imageUrl] = { isWide: false, ratio: 1, ready: true };
       };
       image.src = imageUrl;
     }
 
     function syncWithBackgroundControls() {
       isPausedByBackgroundControl = isBackgroundAnimationPaused(section);
-    }
-
-    function getLoopWidth() {
-      return Math.max(1, track.scrollWidth / 2);
-    }
-
-    function getNormalizedScrollDelta(current, previous, loopWidth) {
-      var delta = current - previous;
-      if (delta > loopWidth / 2) return delta - loopWidth;
-      if (delta < -loopWidth / 2) return delta + loopWidth;
-      return delta;
     }
 
     function applyBackgroundForLogo(logoId) {
@@ -534,16 +529,13 @@
         return;
       }
 
-      if (!panStateByLogoId[logoId]) {
-        panStateByLogoId[logoId] = { phase: Math.random() };
-      }
       ensureImageMeta(imageUrl);
 
       incomingLayer = isLayerAActive ? layerB : layerA;
       outgoingLayer = isLayerAActive ? layerA : layerB;
       incomingLayer.style.backgroundImage = "url('" + imageUrl + "')";
       incomingLayer.setAttribute("data-logo-id", logoId);
-      setLayerBackgroundPosition(incomingLayer, logoId);
+      setLayerBackgroundPosition(incomingLayer, logoId, getNormalizedTrackProgress());
       outgoingLayer.classList.remove("is-active");
       incomingLayer.classList.add("is-active");
       isLayerAActive = !isLayerAActive;
@@ -598,28 +590,13 @@
     function animateBackdropPan() {
       var visibleLogoIdA = layerA.getAttribute("data-logo-id");
       var visibleLogoIdB = layerB.getAttribute("data-logo-id");
-      var updated = {};
-      var loopWidth = getLoopWidth();
-      var currentScrollLeft = track.scrollLeft;
-      var scrollDelta = getNormalizedScrollDelta(currentScrollLeft, lastTrackScrollLeft, loopWidth);
-      var phaseDelta = scrollDelta / loopWidth;
-      lastTrackScrollLeft = currentScrollLeft;
+      var progress = getNormalizedTrackProgress();
 
-      if (!isPausedByBackgroundControl) {
-        [visibleLogoIdA, visibleLogoIdB].forEach(function (logoId) {
-          if (!logoId || updated[logoId]) return;
-          if (!panStateByLogoId[logoId]) {
-            panStateByLogoId[logoId] = { phase: Math.random() };
-          }
-          panStateByLogoId[logoId].phase += phaseDelta;
-          while (panStateByLogoId[logoId].phase > 1) panStateByLogoId[logoId].phase -= 1;
-          while (panStateByLogoId[logoId].phase < 0) panStateByLogoId[logoId].phase += 1;
-          updated[logoId] = true;
-        });
+      if (!isPausedByBackgroundControl || progress !== lastRenderedProgress) {
+        setLayerBackgroundPosition(layerA, visibleLogoIdA, progress);
+        setLayerBackgroundPosition(layerB, visibleLogoIdB, progress);
+        lastRenderedProgress = progress;
       }
-
-      setLayerBackgroundPosition(layerA, visibleLogoIdA);
-      setLayerBackgroundPosition(layerB, visibleLogoIdB);
       window.requestAnimationFrame(animateBackdropPan);
     }
 
