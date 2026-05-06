@@ -36,6 +36,7 @@
       "id": "watsons_property",
       "name": "Watsons Property Group",
       "website": "https://www.watsons-property.co.uk/",
+      "backgroundImage": "watsons.png",
       "image": "watsons_property.png"
     }
   ]
