@@ -106,7 +106,6 @@
     style.textContent = [
       ".page-section.trusted-clients-section { padding-top: 0 !important; padding-bottom: 0 !important; }",
       ".page-section.trusted-clients-section { position: relative; overflow: hidden; }",
-      ".page-section.trusted-clients-section .section-background { z-index: 0 !important; }",
       ".page-section.trusted-clients-section .section-background-overlay { opacity: 0.2 !important; }",
       ".trusted-clients-brand-backdrop { position: absolute; inset: 0; pointer-events: none; z-index: 1; }",
       ".trusted-clients-brand-layer { position: absolute; inset: 0; background-position: center; background-repeat: no-repeat; background-size: cover; opacity: 0; transition: opacity 500ms ease-in-out; filter: saturate(1.05) contrast(1.02); }",
@@ -386,6 +385,7 @@
     if (!section) return null;
     var existing = section.querySelector(".trusted-clients-brand-backdrop");
     if (existing) return existing;
+    var backgroundHost = section.querySelector(".section-background");
 
     var backdrop = document.createElement("div");
     var layerA = document.createElement("div");
@@ -397,7 +397,14 @@
 
     backdrop.appendChild(layerA);
     backdrop.appendChild(layerB);
-    section.insertBefore(backdrop, section.firstChild);
+    if (backgroundHost) {
+      if (window.getComputedStyle(backgroundHost).position === "static") {
+        backgroundHost.style.position = "relative";
+      }
+      backgroundHost.appendChild(backdrop);
+    } else {
+      section.insertBefore(backdrop, section.firstChild);
+    }
     return backdrop;
   }
 
