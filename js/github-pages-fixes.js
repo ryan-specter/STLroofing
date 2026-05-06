@@ -186,17 +186,28 @@
   function isElementVisible(element) {
     if (!element) return false;
     var style = window.getComputedStyle(element);
-    return style.display !== "none" && style.visibility !== "hidden" && parseFloat(style.opacity || "1") !== 0;
+    return style.display !== "none" && style.visibility !== "hidden" && parseFloat(style.opacity || "1") !== 0 && element.offsetParent !== null;
   }
 
   function isBackgroundAnimationPaused(section) {
     if (!section) return false;
+    var video = section.querySelector(".sqs-video-background-native video");
+    if (video) return video.paused;
     var controls = Array.prototype.slice.call(section.querySelectorAll(".background-pause-button"));
     if (!controls.length) return false;
 
-    var visibleControl = controls.find(isElementVisible) || controls[0];
-    var label = (visibleControl.getAttribute("aria-label") || "").toLowerCase();
-    return label.indexOf("play") !== -1;
+    var visibleControls = controls.filter(isElementVisible);
+    var pausedVisibleControl = visibleControls.find(function (control) {
+      return control.classList && control.classList.contains("paused");
+    });
+    if (pausedVisibleControl) return true;
+
+    var activeControl = visibleControls[0] || controls[0];
+    var label = (activeControl.getAttribute("aria-label") || "").toLowerCase();
+    if (label.indexOf("play") !== -1) return true;
+    if (label.indexOf("pause") !== -1) return false;
+
+    return !!(activeControl.classList && activeControl.classList.contains("paused"));
   }
 
   function startCarouselAutoscroll(wrapper, track, section) {
@@ -217,6 +228,18 @@
 
     function getLoopWidth() {
       return track.scrollWidth / 2;
+    }
+
+    function normalizeLoopPosition(rawPosition) {
+      var loopWidth = getLoopWidth();
+      if (!loopWidth) return 0;
+      var normalized = rawPosition % loopWidth;
+      if (normalized < 0) normalized += loopWidth;
+      return normalized;
+    }
+
+    function setLoopScrollPosition(rawPosition) {
+      track.scrollLeft = normalizeLoopPosition(rawPosition);
     }
 
     function getNormalizedProgress() {
@@ -245,10 +268,7 @@
 
     function animate() {
       if (!isDragging && !isPausedByBackgroundControl) {
-        track.scrollLeft += speedPixelsPerFrame;
-        if (track.scrollLeft >= track.scrollWidth / 2) {
-          track.scrollLeft = 0;
-        }
+        setLoopScrollPosition(track.scrollLeft + speedPixelsPerFrame);
       }
       window.requestAnimationFrame(animate);
     }
@@ -271,7 +291,7 @@
     function moveDrag(event) {
       if (!isDragging) return;
       var deltaX = event.clientX - dragStartX;
-      track.scrollLeft = dragStartScrollLeft - deltaX;
+      setLoopScrollPosition(dragStartScrollLeft - deltaX);
       updateScrollbarThumb();
     }
 
@@ -425,9 +445,9 @@
     var isPausedByBackgroundControl = false;
     var wideImageRatioThreshold = 2;
     var panRangePercent = 14;
-    var panSpeedPerFrame = 0.0007;
     var imageMetaByUrl = {};
     var panStateByLogoId = {};
+    var lastTrackScrollLeft = track.scrollLeft;
     var backdrop;
     var layerA;
     var layerB;
@@ -483,6 +503,17 @@
 
     function syncWithBackgroundControls() {
       isPausedByBackgroundControl = isBackgroundAnimationPaused(section);
+    }
+
+    function getLoopWidth() {
+      return Math.max(1, track.scrollWidth / 2);
+    }
+
+    function getNormalizedScrollDelta(current, previous, loopWidth) {
+      var delta = current - previous;
+      if (delta > loopWidth / 2) return delta - loopWidth;
+      if (delta < -loopWidth / 2) return delta + loopWidth;
+      return delta;
     }
 
     function applyBackgroundForLogo(logoId) {
@@ -568,6 +599,11 @@
       var visibleLogoIdA = layerA.getAttribute("data-logo-id");
       var visibleLogoIdB = layerB.getAttribute("data-logo-id");
       var updated = {};
+      var loopWidth = getLoopWidth();
+      var currentScrollLeft = track.scrollLeft;
+      var scrollDelta = getNormalizedScrollDelta(currentScrollLeft, lastTrackScrollLeft, loopWidth);
+      var phaseDelta = scrollDelta / loopWidth;
+      lastTrackScrollLeft = currentScrollLeft;
 
       if (!isPausedByBackgroundControl) {
         [visibleLogoIdA, visibleLogoIdB].forEach(function (logoId) {
@@ -575,10 +611,9 @@
           if (!panStateByLogoId[logoId]) {
             panStateByLogoId[logoId] = { phase: Math.random() };
           }
-          panStateByLogoId[logoId].phase += panSpeedPerFrame;
-          if (panStateByLogoId[logoId].phase > 1) {
-            panStateByLogoId[logoId].phase -= 1;
-          }
+          panStateByLogoId[logoId].phase += phaseDelta;
+          while (panStateByLogoId[logoId].phase > 1) panStateByLogoId[logoId].phase -= 1;
+          while (panStateByLogoId[logoId].phase < 0) panStateByLogoId[logoId].phase += 1;
           updated[logoId] = true;
         });
       }
