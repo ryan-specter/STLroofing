@@ -175,7 +175,10 @@
   }
 
   function startCarouselAutoscroll(wrapper, track, section) {
-    var isPausedByInteraction = false;
+    var isDragging = false;
+    var dragStartX = 0;
+    var dragStartScrollLeft = 0;
+    var suppressClickUntil = 0;
     var isPausedByBackgroundControl = false;
     var baseSlidesCount = track.children.length;
     var speedPixelsPerFrame = 0.35;
@@ -183,7 +186,7 @@
     if (!baseSlidesCount) return;
 
     function animate() {
-      if (!isPausedByInteraction && !isPausedByBackgroundControl) {
+      if (!isDragging && !isPausedByBackgroundControl) {
         track.scrollLeft += speedPixelsPerFrame;
         if (track.scrollLeft >= track.scrollWidth / 2) {
           track.scrollLeft = 0;
@@ -196,12 +199,51 @@
       isPausedByBackgroundControl = isBackgroundAnimationPaused(section);
     }
 
-    wrapper.addEventListener("mouseenter", function () { isPausedByInteraction = true; });
-    wrapper.addEventListener("mouseleave", function () { isPausedByInteraction = false; });
-    wrapper.addEventListener("focusin", function () { isPausedByInteraction = true; });
-    wrapper.addEventListener("focusout", function () { isPausedByInteraction = false; });
-    wrapper.addEventListener("touchstart", function () { isPausedByInteraction = true; }, { passive: true });
-    wrapper.addEventListener("touchend", function () { isPausedByInteraction = false; });
+    function startDrag(event) {
+      if (event.button !== 0) return;
+      isDragging = true;
+      dragStartX = event.clientX;
+      dragStartScrollLeft = track.scrollLeft;
+      wrapper.classList.add("dragging");
+      track.style.cursor = "grabbing";
+      track.style.userSelect = "none";
+      event.preventDefault();
+    }
+
+    function moveDrag(event) {
+      if (!isDragging) return;
+      var deltaX = event.clientX - dragStartX;
+      track.scrollLeft = dragStartScrollLeft - deltaX;
+    }
+
+    function endDrag() {
+      if (!isDragging) return;
+      var dragDistance = Math.abs(track.scrollLeft - dragStartScrollLeft);
+      isDragging = false;
+      wrapper.classList.remove("dragging");
+      track.style.cursor = "";
+      track.style.userSelect = "";
+
+      if (dragDistance > 8) {
+        suppressClickUntil = Date.now() + 250;
+      }
+    }
+
+    track.addEventListener("mousedown", startDrag);
+    window.addEventListener("mousemove", moveDrag);
+    window.addEventListener("mouseup", endDrag);
+    window.addEventListener("mouseleave", endDrag);
+
+    wrapper.addEventListener("click", function (event) {
+      if (Date.now() < suppressClickUntil) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, true);
+
+    track.addEventListener("dragstart", function (event) {
+      event.preventDefault();
+    });
 
     if (section) {
       var controls = section.querySelectorAll(".background-pause-button");
