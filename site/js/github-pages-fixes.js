@@ -5,6 +5,8 @@
   };
   var hlsScriptUrl = "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js";
   var hlsLoaderPromise;
+  var fabformEndpoint = "https://fabform.io/f/3IVlbQK";
+  var fabformStyleId = "fabform-contact-form-styles";
   var localPageTargets = {
     "": "index.html",
     "404": "404.html",
@@ -101,6 +103,63 @@
 
   function getAssetUrl(relativePath) {
     return getGitHubPagesBasePath() + relativePath.replace(/^\/+/, "");
+  }
+
+  function ensureFabformStyles() {
+    if (document.getElementById(fabformStyleId)) return;
+
+    var style = document.createElement("style");
+    style.id = fabformStyleId;
+    style.textContent = [
+      ".fabform-contact-form { display: grid; gap: 1rem; width: 100%; }",
+      ".fabform-contact-form .fabform-field { display: grid; gap: 0.35rem; }",
+      ".fabform-contact-form label { font: inherit; font-weight: 600; color: currentColor; }",
+      ".fabform-contact-form input, .fabform-contact-form textarea { width: 100%; box-sizing: border-box; border: 0; border-radius: 0.35rem; padding: 0.95rem 1rem; font: inherit; background: rgba(255,255,255,0.95); color: #111; }",
+      ".fabform-contact-form textarea { min-height: 9rem; resize: vertical; }",
+      ".fabform-contact-form button { justify-self: start; border: 0; border-radius: 999px; padding: 0.9rem 1.35rem; font: inherit; font-weight: 700; cursor: pointer; background: #111; color: #fff; }",
+      ".fabform-contact-form button:hover, .fabform-contact-form button:focus-visible { background: #333; }"
+    ].join("\n");
+    document.head.appendChild(style);
+  }
+
+  function createFabformContactForm(sourceLabel) {
+    var form = document.createElement("form");
+    form.className = "fabform-contact-form";
+    form.action = fabformEndpoint;
+    form.method = "post";
+    form.setAttribute("accept-charset", "UTF-8");
+
+    form.innerHTML = [
+      '<input type="hidden" name="source" value="' + sourceLabel + '">',
+      '<div class="fabform-field"><label for="' + sourceLabel + '-name">Name <span aria-hidden="true">*</span></label><input id="' + sourceLabel + '-name" name="name" type="text" autocomplete="name" required></div>',
+      '<div class="fabform-field"><label for="' + sourceLabel + '-email">Email <span aria-hidden="true">*</span></label><input id="' + sourceLabel + '-email" name="email" type="email" autocomplete="email" required></div>',
+      '<div class="fabform-field"><label for="' + sourceLabel + '-phone">Phone</label><input id="' + sourceLabel + '-phone" name="phone" type="tel" autocomplete="tel"></div>',
+      '<div class="fabform-field"><label for="' + sourceLabel + '-message">How can we help? <span aria-hidden="true">*</span></label><textarea id="' + sourceLabel + '-message" name="message" required></textarea></div>',
+      '<button type="submit">Send Message</button>'
+    ].join("");
+
+    return form;
+  }
+
+  function hydrateFabformContactForms() {
+    ensureFabformStyles();
+
+    document.querySelectorAll(".sqs-block-form").forEach(function (block, index) {
+      var wrapper = block.querySelector(".form-wrapper");
+      if (!wrapper || wrapper.querySelector(".fabform-contact-form")) return;
+
+      block.removeAttribute("data-block-scripts");
+      block.setAttribute("data-fabform-endpoint", fabformEndpoint);
+      wrapper.innerHTML = "";
+      wrapper.appendChild(createFabformContactForm("contact-form-" + (index + 1)));
+      wrapper.setAttribute("data-fabform-ready", "true");
+    });
+  }
+
+  function scheduleFabformHydration() {
+    [0, 250, 1000, 2500].forEach(function (delay) {
+      setTimeout(hydrateFabformContactForms, delay);
+    });
   }
 
   function ensureLogosCarouselStyles() {
@@ -911,6 +970,7 @@
 
   function runFixes() {
     normalizeInternalLinks();
+    scheduleFabformHydration();
     hydrateTrustedClientsCarousel();
     hydrateVideoBackgrounds();
   }
