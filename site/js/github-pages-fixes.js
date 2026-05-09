@@ -16,6 +16,11 @@
   };
   var logosManifestPath = "images/business-logos/logos.json";
   var logosCarouselStyleId = "trusted-clients-carousel-styles";
+  var trustedClientsCarouselObserver;
+  var trustedClientsPageObserver;
+  var trustedClientsPageObserverTimer;
+  var trustedClientsObserverTicking = false;
+  var isRenderingTrustedClientsCarousel = false;
   var fallbackLogos = [
     { id: "albert_bartlett", name: "Albert Bartlett", website: "https://albertbartlett.co.uk/", image: "albert_bartlett.png" },
     { id: "tms_fm", name: "TMS Facilities Management", website: "https://tmsfm.co.uk/about-us/", image: "tms_fm.png", hideFromCarousel: true },
@@ -695,16 +700,72 @@
     var headingFeBlock = feBlock && feBlock.previousElementSibling;
     var followingFeBlock = feBlock && feBlock.nextElementSibling;
 
+    isRenderingTrustedClientsCarousel = true;
     blockContent.innerHTML = "";
     blockContent.appendChild(createTrustedClientsCarousel(logos, section));
     updateTrustedClientsHeading(carouselBlock);
+    carouselBlock.classList.remove("sqs-block-instagram", "instagram-block");
     carouselBlock.classList.add("trusted-clients-block");
+    carouselBlock.removeAttribute("data-block-json");
+    carouselBlock.removeAttribute("data-block-type");
     if (section) section.classList.add("trusted-clients-section");
     if (previousSection && previousSection.classList) previousSection.classList.add("trusted-clients-previous-section");
     if (feBlock) feBlock.classList.add("trusted-clients-fe-block");
     if (headingFeBlock) headingFeBlock.classList.add("trusted-clients-heading-fe-block");
     if (followingFeBlock) followingFeBlock.classList.add("trusted-clients-following-fe-block");
     carouselBlock.setAttribute("data-github-pages-logos", "ready");
+    isRenderingTrustedClientsCarousel = false;
+  }
+
+  function ensureTrustedClientsCarousel(logos) {
+    var carouselBlock = findTrustedClientsBlock();
+    if (!carouselBlock) return false;
+
+    if (!carouselBlock.querySelector(".trusted-clients-carousel")) {
+      renderTrustedClientsIntoBlock(carouselBlock, logos);
+    }
+    watchTrustedClientsBlock(carouselBlock, logos);
+    return true;
+  }
+
+  function watchTrustedClientsBlock(carouselBlock, logos) {
+    if (!carouselBlock || typeof MutationObserver === "undefined") return;
+
+    if (trustedClientsCarouselObserver) trustedClientsCarouselObserver.disconnect();
+    trustedClientsCarouselObserver = new MutationObserver(function () {
+      if (isRenderingTrustedClientsCarousel || carouselBlock.querySelector(".trusted-clients-carousel")) return;
+      renderTrustedClientsIntoBlock(carouselBlock, logos);
+    });
+    trustedClientsCarouselObserver.observe(carouselBlock, { childList: true, subtree: true });
+  }
+
+  function watchTrustedClientsPage(logos) {
+    if (trustedClientsPageObserver || typeof MutationObserver === "undefined" || !document.body) return;
+
+    trustedClientsPageObserver = new MutationObserver(function () {
+      if (trustedClientsObserverTicking) return;
+      trustedClientsObserverTicking = true;
+      window.requestAnimationFrame(function () {
+        trustedClientsObserverTicking = false;
+        ensureTrustedClientsCarousel(logos);
+      });
+    });
+    trustedClientsPageObserver.observe(document.body, { childList: true, subtree: true });
+
+    clearTimeout(trustedClientsPageObserverTimer);
+    trustedClientsPageObserverTimer = setTimeout(function () {
+      if (trustedClientsPageObserver) trustedClientsPageObserver.disconnect();
+      trustedClientsPageObserver = null;
+    }, 8000);
+  }
+
+  function scheduleTrustedClientsHydration(logos) {
+    [0, 100, 500, 1500, 3000].forEach(function (delay) {
+      setTimeout(function () {
+        ensureTrustedClientsCarousel(logos);
+      }, delay);
+    });
+    watchTrustedClientsPage(logos);
   }
 
   function updateTrustedClientsHeading(carouselBlock) {
@@ -735,7 +796,7 @@
       for (var j = 0; j < blocks.length; j += 1) {
         var block = blocks[j];
         if (block.classList.contains("html-block")) continue;
-        if (block.getAttribute("data-github-pages-logos") === "ready") continue;
+        if (block.getAttribute("data-github-pages-logos") === "ready" && block.querySelector(".trusted-clients-carousel")) continue;
         if (!block.querySelector(".sqs-block-content")) continue;
         return block;
       }
@@ -756,10 +817,12 @@
       .then(function (manifest) {
         var logos = manifest && Array.isArray(manifest.logos) && manifest.logos.length ? manifest.logos : fallbackLogos;
         renderTrustedClientsIntoBlock(carouselBlock, logos);
+        scheduleTrustedClientsHydration(logos);
       })
       .catch(function (error) {
         console.warn(error);
         renderTrustedClientsIntoBlock(carouselBlock, fallbackLogos);
+        scheduleTrustedClientsHydration(fallbackLogos);
       });
   }
 
