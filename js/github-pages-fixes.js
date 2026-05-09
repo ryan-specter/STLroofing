@@ -685,31 +685,30 @@
     return wrapper;
   }
 
-  function renderTrustedClientsIntoBlock(instagramBlock, logos) {
+  function renderTrustedClientsIntoBlock(carouselBlock, logos) {
     ensureLogosCarouselStyles();
-    var blockContent = instagramBlock.querySelector(".sqs-block-content");
+    var blockContent = carouselBlock.querySelector(".sqs-block-content");
     if (!blockContent) return;
-    var feBlock = instagramBlock.closest(".fe-block");
-    var section = instagramBlock.closest(".page-section");
+    var feBlock = carouselBlock.closest(".fe-block");
+    var section = carouselBlock.closest(".page-section");
     var previousSection = section && section.previousElementSibling;
     var headingFeBlock = feBlock && feBlock.previousElementSibling;
     var followingFeBlock = feBlock && feBlock.nextElementSibling;
 
     blockContent.innerHTML = "";
     blockContent.appendChild(createTrustedClientsCarousel(logos, section));
-    updateTrustedClientsHeading(instagramBlock);
-    instagramBlock.classList.remove("sqs-block-instagram", "instagram-block");
-    instagramBlock.classList.add("trusted-clients-block");
+    updateTrustedClientsHeading(carouselBlock);
+    carouselBlock.classList.add("trusted-clients-block");
     if (section) section.classList.add("trusted-clients-section");
     if (previousSection && previousSection.classList) previousSection.classList.add("trusted-clients-previous-section");
     if (feBlock) feBlock.classList.add("trusted-clients-fe-block");
     if (headingFeBlock) headingFeBlock.classList.add("trusted-clients-heading-fe-block");
     if (followingFeBlock) followingFeBlock.classList.add("trusted-clients-following-fe-block");
-    instagramBlock.setAttribute("data-github-pages-logos", "ready");
+    carouselBlock.setAttribute("data-github-pages-logos", "ready");
   }
 
-  function updateTrustedClientsHeading(instagramBlock) {
-    var textBlock = instagramBlock && instagramBlock.parentElement && instagramBlock.parentElement.previousElementSibling;
+  function updateTrustedClientsHeading(carouselBlock) {
+    var textBlock = carouselBlock && carouselBlock.parentElement && carouselBlock.parentElement.previousElementSibling;
     if (!textBlock) return;
 
     var heading = textBlock.querySelector("h2");
@@ -721,9 +720,33 @@
     }
   }
 
+  function findTrustedClientsBlock() {
+    var sections = document.querySelectorAll(".page-section");
+    var headingPattern = /trusted by names you know|what(?:'|’)s the latest\??/i;
+
+    for (var i = 0; i < sections.length; i += 1) {
+      var section = sections[i];
+      var headingFeBlock = section.querySelector(".fe-block .sqs-block.html-block");
+      var heading = headingFeBlock && headingFeBlock.querySelector("h2");
+      var headingText = heading && heading.textContent ? heading.textContent.trim() : "";
+      if (!headingText || !headingPattern.test(headingText)) continue;
+
+      var blocks = section.querySelectorAll(".fe-block .sqs-block");
+      for (var j = 0; j < blocks.length; j += 1) {
+        var block = blocks[j];
+        if (block.classList.contains("html-block")) continue;
+        if (block.getAttribute("data-github-pages-logos") === "ready") continue;
+        if (!block.querySelector(".sqs-block-content")) continue;
+        return block;
+      }
+    }
+
+    return null;
+  }
+
   function hydrateTrustedClientsCarousel() {
-    var instagramBlock = document.querySelector(".sqs-block-instagram");
-    if (!instagramBlock || instagramBlock.getAttribute("data-github-pages-logos") === "ready") return;
+    var carouselBlock = findTrustedClientsBlock();
+    if (!carouselBlock) return;
 
     fetch(getAssetUrl(logosManifestPath))
       .then(function (response) {
@@ -732,28 +755,12 @@
       })
       .then(function (manifest) {
         var logos = manifest && Array.isArray(manifest.logos) && manifest.logos.length ? manifest.logos : fallbackLogos;
-        renderTrustedClientsIntoBlock(instagramBlock, logos);
+        renderTrustedClientsIntoBlock(carouselBlock, logos);
       })
       .catch(function (error) {
         console.warn(error);
-        renderTrustedClientsIntoBlock(instagramBlock, fallbackLogos);
+        renderTrustedClientsIntoBlock(carouselBlock, fallbackLogos);
       });
-  }
-
-  function hydrateInstagramEmbeds() {
-    document.querySelectorAll(".sqs-video-wrapper[data-html*='instagram.com']").forEach(function (wrapper) {
-      if (wrapper.querySelector("iframe")) return;
-
-      var container = document.createElement("div");
-      container.innerHTML = decodeHtml(wrapper.getAttribute("data-html"));
-      var iframe = container.querySelector("iframe");
-      if (!iframe) return;
-
-      iframe.setAttribute("loading", "lazy");
-      iframe.setAttribute("allow", "autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share");
-      iframe.setAttribute("allowfullscreen", "");
-      wrapper.appendChild(iframe);
-    });
   }
 
   function loadHlsScript() {
