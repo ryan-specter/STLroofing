@@ -1,0 +1,10 @@
+name = "skysthelimit"
+compatibility_date = "2026-05-09"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+exclude = [
+  ".git/*",
+  "node_modules/*"
+]
