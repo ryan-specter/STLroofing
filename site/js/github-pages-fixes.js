@@ -14,7 +14,8 @@
     contact: "contact.html",
     home: "home.html",
     index: "index.html",
-    privacy: "privacy.html"
+    privacy: "privacy.html",
+    thanks: "thanks.html"
   };
   var logosManifestPath = "images/business-logos/logos.json";
   var logosCarouselStyleId = "trusted-clients-carousel-styles";
