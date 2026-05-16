@@ -15,7 +15,10 @@
     home: "home.html",
     index: "index.html",
     privacy: "privacy.html",
-    thanks: "thanks.html"
+    thanks: "thanks.html",
+    "roofing-north-norfolk": "roofing-north-norfolk/index.html",
+    "roofing-south-norfolk": "roofing-south-norfolk/index.html",
+    "chimney-repointing-norfolk-suffolk": "chimney-repointing-norfolk-suffolk/index.html"
   };
   var logosManifestPath = "images/business-logos/logos.json";
   var logosCarouselStyleId = "trusted-clients-carousel-styles";
