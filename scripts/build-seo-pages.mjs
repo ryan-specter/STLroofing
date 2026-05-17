@@ -1,5 +1,5 @@
 /**
- * Generates SEO landing pages from contact.html so they match site chrome/layout.
+ * Generates SEO landing pages from privacy.html so they match site chrome/layout.
  */
 import fs from "fs";
 import path from "path";
@@ -7,16 +7,10 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const siteDir = path.join(__dirname, "..", "site");
-const template = fs.readFileSync(path.join(siteDir, "contact.html"), "utf8");
+const template = fs.readFileSync(path.join(siteDir, "privacy.html"), "utf8");
 
-const CONTACT_HERO =
-  '<p class="" data-rte-preserve-empty="true" style="white-space:pre-wrap;"></p><div class="sqsrte-scaled-text-container"><span class="sqsrte-scaled-text"><h1 style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Contact us</span></h1></span></div><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Interested in working with us? Fill out some info and we will be in touch to arrange your free quotation.</span></p>';
-
-const FORM_BLOCK_START = '<div class="fe-block fe-block-60fe2ef5f75cdc2d0128">';
-const FORM_BLOCK_END = "    <button class='background-pause-button'";
-
-const HERO_BLOCK_START = '<div class="fe-block fe-block-a18791bd572c905cdec6">';
-const HERO_BLOCK_END = '<div class="fe-block fe-block-60fe2ef5f75cdc2d0128">';
+const PRIVACY_COLLECTION = "collection-68557a4d141c1978cfe6fe1c";
+const CONTENT_BLOCK_ID = "block-dfb189d7f3a818b2bc20";
 
 const pages = [
   {
@@ -31,12 +25,12 @@ const pages = [
     lead:
       "Sky's The Limit is based in Cromer and specialises in roofing and repointing across <strong>North Norfolk</strong> — from the coast to market towns and villages throughout the district.",
     body: `
-<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Whether you need storm-damage repairs, a full re-roof, chimney repointing, or new fascias and guttering, our team delivers tidy, reliable workmanship with clear communication and free, no-obligation quotations.</span></p>
-<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Roofing services in North Norfolk</span></h2>
-<ul data-rte-list="default"><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">New pitched and flat roof installations</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Roof repairs, leak fixes and storm damage</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Chimney repointing, lead flashing and stack repairs</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Fascias, soffits, gutters and roofline replacement</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Tile, slate and membrane flat roofing</span></p></li></ul>
-<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Areas we cover in North Norfolk</span></h2>
-<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">We work throughout the North Norfolk district, including Cromer, Sheringham, Holt, Wells-next-the-Sea, Hunstanton, Fakenham, Mundesley, North Walsham, Blakeney, Cley, Wroxham and the Broads.</span></p>
-<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">We also cover <a href="../roofing-south-norfolk/">South Norfolk</a> and <a href="../chimney-repointing-norfolk-suffolk/">Suffolk</a> — <a href="../index.html">see our full service area</a>.</span></p>`,
+<p class="" style="white-space:pre-wrap;">Whether you need storm-damage repairs, a full re-roof, chimney repointing, or new fascias and guttering, our team delivers tidy, reliable workmanship with clear communication and free, no-obligation quotations.</p>
+<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--accent">Roofing services in North Norfolk</span></h2>
+<ul data-rte-list="default"><li><p class="" style="white-space:pre-wrap;">New pitched and flat roof installations</p></li><li><p class="" style="white-space:pre-wrap;">Roof repairs, leak fixes and storm damage</p></li><li><p class="" style="white-space:pre-wrap;">Chimney repointing, lead flashing and stack repairs</p></li><li><p class="" style="white-space:pre-wrap;">Fascias, soffits, gutters and roofline replacement</p></li><li><p class="" style="white-space:pre-wrap;">Tile, slate and membrane flat roofing</p></li></ul>
+<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--accent">Areas we cover in North Norfolk</span></h2>
+<p class="" style="white-space:pre-wrap;">We work throughout the North Norfolk district, including Cromer, Sheringham, Holt, Wells-next-the-Sea, Hunstanton, Fakenham, Mundesley, North Walsham, Blakeney, Cley, Wroxham and the Broads.</p>
+<p class="" style="white-space:pre-wrap;">We also cover <a href="../roofing-south-norfolk/">South Norfolk</a> and <a href="../chimney-repointing-norfolk-suffolk/">Suffolk</a> — <a href="../index.html">see our full service area</a>.</p>`,
   },
   {
     slug: "roofing-south-norfolk",
@@ -50,12 +44,12 @@ const pages = [
     lead:
       "From our base in Cromer we provide roofing and repointing services across <strong>South Norfolk</strong>, including Norwich, market towns and rural properties throughout the district.",
     body: `
-<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Our work covers domestic and commercial roofs — repairs after storms, planned re-roofs, chimney maintenance and complete roofline upgrades. Every job starts with an honest assessment and a written quote with no hidden extras.</span></p>
-<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">What we offer in South Norfolk</span></h2>
-<ul data-rte-list="default"><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Emergency and planned roof repairs</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">New tiled, slated and flat roofs</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Chimney repointing and lead work</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Guttering, fascias and soffits</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Mortar and ridge pointing</span></p></li></ul>
-<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">South Norfolk towns &amp; villages</span></h2>
-<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Regular projects across South Norfolk include Norwich, Wymondham, Diss, Attleborough, Thetford, Loddon, Harleston, Long Stratton and Poringland.</span></p>
-<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">See our <a href="../roofing-north-norfolk/">North Norfolk roofing</a> page or <a href="../chimney-repointing-norfolk-suffolk/">chimney repointing in Suffolk</a>.</span></p>`,
+<p class="" style="white-space:pre-wrap;">Our work covers domestic and commercial roofs — repairs after storms, planned re-roofs, chimney maintenance and complete roofline upgrades. Every job starts with an honest assessment and a written quote with no hidden extras.</p>
+<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--accent">What we offer in South Norfolk</span></h2>
+<ul data-rte-list="default"><li><p class="" style="white-space:pre-wrap;">Emergency and planned roof repairs</p></li><li><p class="" style="white-space:pre-wrap;">New tiled, slated and flat roofs</p></li><li><p class="" style="white-space:pre-wrap;">Chimney repointing and lead work</p></li><li><p class="" style="white-space:pre-wrap;">Guttering, fascias and soffits</p></li><li><p class="" style="white-space:pre-wrap;">Mortar and ridge pointing</p></li></ul>
+<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--accent">South Norfolk towns &amp; villages</span></h2>
+<p class="" style="white-space:pre-wrap;">Regular projects across South Norfolk include Norwich, Wymondham, Diss, Attleborough, Thetford, Loddon, Harleston, Long Stratton and Poringland.</p>
+<p class="" style="white-space:pre-wrap;">See our <a href="../roofing-north-norfolk/">North Norfolk roofing</a> page or <a href="../chimney-repointing-norfolk-suffolk/">chimney repointing in Suffolk</a>.</p>`,
   },
   {
     slug: "chimney-repointing-norfolk-suffolk",
@@ -69,19 +63,20 @@ const pages = [
     lead:
       "Chimneys take the worst of coastal wind and rain across East Anglia. We provide specialist <strong>chimney repointing</strong>, lead flashing repairs and stack maintenance throughout <strong>Norfolk</strong> and <strong>Suffolk</strong>.",
     body: `
-<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Crumbling mortar, loose pots and failed flashings can let water into lofts and bedrooms. Our team rakes out decayed mortar, repoints with a matched mix, and repairs lead aprons and back gutters for a watertight finish.</span></p>
-<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Chimney services</span></h2>
-<ul data-rte-list="default"><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Full chimney repointing and mortar repairs</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Lead flashing replacement and dressing</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Chimney pot rebedding and cowls</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Stack repairs after storm damage</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Ridge and verge pointing</span></p></li></ul>
-<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Where we work</span></h2>
-<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">We cover North Norfolk (Cromer, Sheringham, Holt, Wells), South Norfolk (Norwich, Wymondham, Diss) and Suffolk including Lowestoft, Beccles, Bungay and Ipswich.</span></p>
-<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white"><a href="../roofing-north-norfolk/">North Norfolk roofing</a> · <a href="../roofing-south-norfolk/">South Norfolk roofing</a></span></p>
-<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Signs your chimney needs attention</span></h2>
-<ul data-rte-list="default"><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Mortar falling onto the roof or ground</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Damp patches on chimney breasts indoors</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Visible gaps in brick joints or leaning pots</span></p></li><li><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">Cracked or slipped lead around the stack base</span></p></li></ul>`,
+<p class="" style="white-space:pre-wrap;">Crumbling mortar, loose pots and failed flashings can let water into lofts and bedrooms. Our team rakes out decayed mortar, repoints with a matched mix, and repairs lead aprons and back gutters for a watertight finish.</p>
+<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--accent">Chimney services</span></h2>
+<ul data-rte-list="default"><li><p class="" style="white-space:pre-wrap;">Full chimney repointing and mortar repairs</p></li><li><p class="" style="white-space:pre-wrap;">Lead flashing replacement and dressing</p></li><li><p class="" style="white-space:pre-wrap;">Chimney pot rebedding and cowls</p></li><li><p class="" style="white-space:pre-wrap;">Stack repairs after storm damage</p></li><li><p class="" style="white-space:pre-wrap;">Ridge and verge pointing</p></li></ul>
+<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--accent">Where we work</span></h2>
+<p class="" style="white-space:pre-wrap;">We cover North Norfolk (Cromer, Sheringham, Holt, Wells), South Norfolk (Norwich, Wymondham, Diss) and Suffolk including Lowestoft, Beccles, Bungay and Ipswich.</p>
+<p class="" style="white-space:pre-wrap;"><a href="../roofing-north-norfolk/">North Norfolk roofing</a> · <a href="../roofing-south-norfolk/">South Norfolk roofing</a></p>
+<h2 style="white-space:pre-wrap;"><span class="sqsrte-text-color--accent">Signs your chimney needs attention</span></h2>
+<ul data-rte-list="default"><li><p class="" style="white-space:pre-wrap;">Mortar falling onto the roof or ground</p></li><li><p class="" style="white-space:pre-wrap;">Damp patches on chimney breasts indoors</p></li><li><p class="" style="white-space:pre-wrap;">Visible gaps in brick joints or leaning pots</p></li><li><p class="" style="white-space:pre-wrap;">Cracked or slipped lead around the stack base</p></li></ul>`,
   },
 ];
 
 function prefixAssetPaths(html) {
   return html
+    .replace(/<base href="">/, '<base href="../">')
     .replace(/(href|src)="(css\/|js\/|images\/)/g, '$1="../$2')
     .replace(/href="(index|contact|privacy|cart|thanks|404|home)\.html"/g, 'href="../$1.html"')
     .replace(
@@ -91,25 +86,9 @@ function prefixAssetPaths(html) {
     .replace(/href="\/sitemap\.xml"/g, 'href="../sitemap.xml"');
 }
 
-function buildHeroContent(page) {
-  return `<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white"><a href="../index.html">Home</a> / ${page.breadcrumb}</span></p><div class="sqsrte-scaled-text-container"><span class="sqsrte-scaled-text"><h1 style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">${page.h1}</span></h1></span></div><p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white">${page.lead}</span></p>`;
-}
-
-function buildBodyBlockFromHeroTemplate(heroBlockTemplate, page) {
-  const cta = `<p class="" style="white-space:pre-wrap;"><span class="sqsrte-text-color--white"><a href="../contact.html">Get a free quote</a> · <a href="tel:+447863395028">Call 07863 395028</a></span></p>`;
-  const inner = `${page.body}\n${cta}`;
-  const renamed = heroBlockTemplate
-    .replace(/fe-block-a18791bd572c905cdec6/g, "fe-block-seo-body")
-    .replace(/block-a18791bd572c905cdec6/g, "block-seo-body")
-    .replace(/a18791bd572c905cdec6/g, "seo-body");
-  const replaced = renamed.replace(
-    /(<div class="sqs-html-content" data-sqsp-text-block-content>)[\s\S]*?(<\/div>\s*<style id="container-styles">)/,
-    `$1${inner}$2`
-  );
-  if (replaced === renamed) {
-    throw new Error("Failed to replace body content in hero block template");
-  }
-  return replaced;
+function buildMainContent(page) {
+  const cta = `<p class="" style="white-space:pre-wrap;"><strong><a href="../contact.html">Get a free quote</a></strong> · <a href="tel:+447863395028">Call 07863 395028</a></p>`;
+  return `<p class="" style="white-space:pre-wrap;"><a href="../index.html">Home</a> / ${page.breadcrumb}</p><h1 style="white-space:pre-wrap;"><span class="sqsrte-text-color--accent">${page.h1}</span></h1><p class="" style="white-space:pre-wrap;">${page.lead}</p>${page.body}${cta}`;
 }
 
 function buildPage(page) {
@@ -168,29 +147,23 @@ function buildPage(page) {
     `<script type="application/ld+json">${JSON.stringify(schema)}</script><link rel="stylesheet" type="text/css" href="css/site.css"/>`
   );
 
-  if (!html.includes(CONTACT_HERO)) {
-    throw new Error("Contact hero marker not found in template");
-  }
-  html = html.replace(CONTACT_HERO, buildHeroContent(page));
+  const contentPattern = new RegExp(
+    `(<div class="sqs-html-content" data-sqsp-text-block-content>)[\\s\\S]*?(</div>\\s*<style id="container-styles">#${CONTENT_BLOCK_ID})`
+  );
 
-  const heroStart = html.indexOf(HERO_BLOCK_START);
-  const heroEnd = html.indexOf(HERO_BLOCK_END, heroStart);
-  if (heroStart === -1 || heroEnd === -1) {
-    throw new Error("Hero block markers not found in template");
+  const mainContent = buildMainContent(page);
+  const replaced = html.replace(contentPattern, `$1${mainContent}$2`);
+  if (replaced === html) {
+    throw new Error(`Failed to replace main content in template (${CONTENT_BLOCK_ID})`);
   }
-  const heroBlockTemplate = html.slice(heroStart, heroEnd);
-  const bodyBlock = buildBodyBlockFromHeroTemplate(heroBlockTemplate, page);
-
-  const formStart = html.indexOf(FORM_BLOCK_START);
-  const formEnd = html.indexOf(FORM_BLOCK_END, formStart);
-  if (formStart === -1 || formEnd === -1) {
-    throw new Error("Form block markers not found in template");
-  }
-  html = html.slice(0, formStart) + bodyBlock + html.slice(formEnd);
+  html = replaced;
 
   html = prefixAssetPaths(html);
-  html = html.replace(/collection-681ca588cc62471553f1b749/g, `collection-seo-${page.slug}`);
-  html = html.replace(/id="collection-681ca588cc62471553f1b749"/g, `id="collection-seo-${page.slug}"`);
+  html = html.replace(new RegExp(PRIVACY_COLLECTION, "g"), `collection-seo-${page.slug}`);
+  html = html.replace(
+    /header-nav-item--active/g,
+    "header-nav-item--collection"
+  );
 
   return html;
 }
