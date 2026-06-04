@@ -1362,12 +1362,25 @@
     }
   }
 
-  function attachVideoSource(video, source) {
+  function resetVideoPosterReveal(video, poster) {
+    if (!video) return;
+    video.classList.remove("is-playing");
+    delete video.dataset.wbPosterRevealed;
+    delete video.dataset.wbPosterReveal;
+    if (poster) poster.classList.remove("is-hidden");
+  }
+
+  function videoHasRenderableFrame(video) {
+    return video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0;
+  }
+
+  function attachVideoSource(video, source, poster) {
     if (!source || video.getAttribute("data-wb-video-src") === source) {
       playVideo(video);
       return;
     }
 
+    resetVideoPosterReveal(video, poster);
     video.setAttribute("data-wb-video-src", source);
     video.removeAttribute("src");
     while (video.firstChild) video.removeChild(video.firstChild);
@@ -1456,31 +1469,54 @@
     if (video.dataset.wbPosterReveal === "bound") return;
     video.dataset.wbPosterReveal = "bound";
 
-    function revealVideo() {
+    function hidePosterAfterVideoPainted() {
       if (video.dataset.wbPosterRevealed === "1") return;
+      if (!videoHasRenderableFrame(video)) return false;
 
-      function showVideoFrame() {
-        video.dataset.wbPosterRevealed = "1";
-        video.classList.add("is-playing");
-        poster.classList.add("is-hidden");
-      }
+      video.dataset.wbPosterRevealed = "1";
+      video.classList.add("is-playing");
+
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          poster.classList.add("is-hidden");
+        });
+      });
+      return true;
+    }
+
+    function waitForPaintedFrame(attemptsLeft) {
+      if (hidePosterAfterVideoPainted()) return;
 
       if (typeof video.requestVideoFrameCallback === "function") {
-        video.requestVideoFrameCallback(showVideoFrame);
+        video.requestVideoFrameCallback(function () {
+          if (!hidePosterAfterVideoPainted()) waitForPaintedFrame(attemptsLeft - 1);
+        });
+        return;
+      }
+
+      if (attemptsLeft <= 0) {
+        hidePosterAfterVideoPainted();
         return;
       }
 
       requestAnimationFrame(function () {
-        requestAnimationFrame(showVideoFrame);
+        waitForPaintedFrame(attemptsLeft - 1);
       });
     }
 
-    if (!video.paused && video.currentTime > 0 && video.readyState >= 2) {
-      revealVideo();
-      return;
+    function startReveal() {
+      if (video.dataset.wbPosterRevealed === "1") return;
+      waitForPaintedFrame(8);
     }
 
-    video.addEventListener("playing", revealVideo, { once: true });
+    video.addEventListener("playing", startReveal, { once: true });
+    video.addEventListener(
+      "loadeddata",
+      function () {
+        if (!video.paused) startReveal();
+      },
+      { once: true }
+    );
   }
 
   function hydrateVideoBackgrounds() {
@@ -1505,7 +1541,11 @@
         poster.classList.remove("is-hidden");
       }
 
-      attachVideoSource(video, hosted.source);
+      if (hosted.poster) {
+        video.setAttribute("poster", hosted.poster);
+      }
+
+      attachVideoSource(video, hosted.source, poster);
       markVideoPosterReady(video, poster);
     });
   }

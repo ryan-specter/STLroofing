@@ -183,7 +183,6 @@ a.wb-phone-link:focus-visible {
 
 .wb-video-poster.is-hidden {
   opacity: 0;
-  visibility: hidden;
 }
 
 .section-background .sqs-video-background-native video,
