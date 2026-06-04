@@ -1453,18 +1453,33 @@
 
   function markVideoPosterReady(video, poster) {
     if (!video || !poster) return;
+    if (video.dataset.wbPosterReveal === "bound") return;
+    video.dataset.wbPosterReveal = "bound";
 
     function revealVideo() {
-      poster.classList.add("is-hidden");
-      video.classList.add("is-playing");
+      if (video.dataset.wbPosterRevealed === "1") return;
+
+      function showVideoFrame() {
+        video.dataset.wbPosterRevealed = "1";
+        video.classList.add("is-playing");
+        poster.classList.add("is-hidden");
+      }
+
+      if (typeof video.requestVideoFrameCallback === "function") {
+        video.requestVideoFrameCallback(showVideoFrame);
+        return;
+      }
+
+      requestAnimationFrame(function () {
+        requestAnimationFrame(showVideoFrame);
+      });
     }
 
-    if (video.readyState >= 2) {
+    if (!video.paused && video.currentTime > 0 && video.readyState >= 2) {
       revealVideo();
       return;
     }
 
-    video.addEventListener("loadeddata", revealVideo, { once: true });
     video.addEventListener("playing", revealVideo, { once: true });
   }
 
@@ -1486,8 +1501,8 @@
         player.appendChild(video);
       }
 
-      if (hosted.poster) {
-        video.setAttribute("poster", hosted.poster);
+      if (!video.classList.contains("is-playing")) {
+        poster.classList.remove("is-hidden");
       }
 
       attachVideoSource(video, hosted.source);
