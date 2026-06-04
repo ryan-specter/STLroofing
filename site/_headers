@@ -1,0 +1,11 @@
+/images/*.m3u8
+  Content-Type: application/vnd.apple.mpegurl
+  Access-Control-Allow-Origin: *
+
+/images/*.ts
+  Content-Type: video/mp2t
+  Access-Control-Allow-Origin: *
+
+/images/*.mp4
+  Content-Type: video/mp4
+  Access-Control-Allow-Origin: *
