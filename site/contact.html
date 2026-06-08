@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Suspended</title>
+  <style>
+    @font-face {
+      font-family: "Horizon";
+      src:
+        url("Horizon.woff2") format("woff2"),
+        url("Horizon.woff") format("woff"),
+        url("Horizon.otf") format("opentype"),
+        url("Horizon.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Playfair Display";
+      src:
+        url("PlayfairDisplay-Regular.woff2") format("woff2"),
+        url("PlayfairDisplay-Regular.woff") format("woff"),
+        url("PlayfairDisplay-Regular.otf") format("opentype"),
+        url("PlayfairDisplay-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Playfair Display";
+      src:
+        url("PlayfairDisplay-Italic.woff2") format("woff2"),
+        url("PlayfairDisplay-Italic.woff") format("woff"),
+        url("PlayfairDisplay-Italic.otf") format("opentype"),
+        url("PlayfairDisplay-Italic.ttf") format("truetype");
+      font-weight: 400;
+      font-style: italic;
+      font-display: swap;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #dfff00;
+      --brown: #341905;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--brown);
+      font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .page {
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      max-width: 52rem;
+      width: 100%;
+    }
+
+    .graphic {
+      width: min(100%, 28rem);
+      height: auto;
+      display: block;
+      margin-bottom: 3.5rem;
+    }
+
+    h1 {
+      font-family: "Horizon", sans-serif;
+      font-size: clamp(2.25rem, 8vw, 4.5rem);
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      line-height: 1.1;
+      margin-bottom: 2rem;
+      text-transform: uppercase;
+    }
+
+    @media (min-width: 48rem) {
+      h1 {
+        white-space: nowrap;
+        font-size: clamp(2.5rem, 4.5vw, 4.5rem);
+      }
+    }
+
+    p {
+      font-size: clamp(1.25rem, 3.2vw, 2rem);
+      line-height: 1.55;
+      max-width: 42rem;
+    }
+
+    #site-url {
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="content">
+      <img class="graphic" src="Reach.svg" alt="Cat reaching out of a hole" width="725" height="246">
+      <h1>Site Suspended</h1>
+      <p>Due to a billing issue <span id="site-url"></span> is currently unavailable.</p>
+    </div>
+  </main>
+  <script>
+    (function () {
+      var el = document.getElementById("site-url");
+      el.textContent = window.location.hostname || window.location.host;
+    })();
+  </script>
+</body>
+</html>
