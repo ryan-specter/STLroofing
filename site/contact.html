@@ -118,7 +118,7 @@
       font-style: italic;
     }
 
-    .pay-now {
+    .action-btn {
       display: inline-block;
       margin-top: 2.5rem;
       padding: 0.85rem 2.25rem;
@@ -134,13 +134,13 @@
       border: 2px solid var(--brown);
     }
 
-    .pay-now:hover,
-    .pay-now:focus-visible {
+    .action-btn:hover,
+    .action-btn:focus-visible {
       color: var(--brown);
       background-color: transparent;
     }
 
-    .pay-now[hidden] {
+    .action-btn[hidden] {
       display: none;
     }
   </style>
@@ -149,33 +149,79 @@
   <main class="page">
     <div class="content">
       <img class="graphic" src="Reach.svg" alt="Cat reaching out of a hole" width="725" height="246">
-      <h1>Site Suspended</h1>
-      <p>Due to a billing issue <span id="site-url"></span> is currently unavailable.</p>
-      <a id="pay-now" class="pay-now" href="#" hidden>Pay Now</a>
+      <h1 id="heading">Site Suspended</h1>
+      <p id="message">Due to a billing issue <span id="site-url"></span> is currently unavailable.</p>
+      <a id="action-btn" class="action-btn" href="#" hidden>Pay Now</a>
     </div>
   </main>
   <script>
     (function () {
+      var heading = document.getElementById("heading");
+      var message = document.getElementById("message");
       var siteUrl = document.getElementById("site-url");
-      siteUrl.textContent = window.location.hostname || window.location.host;
+      var actionBtn = document.getElementById("action-btn");
+      var hostname = window.location.hostname || window.location.host;
 
-      var payNow = document.getElementById("pay-now");
+      function normalizeHostname(host) {
+        return (host || "").toLowerCase().replace(/^www\./, "");
+      }
 
-      fetch("payment.txt")
+      function showActionButton(label, url) {
+        if (!/^https?:\/\//i.test(url)) return;
+        actionBtn.textContent = label;
+        actionBtn.href = url;
+        actionBtn.removeAttribute("hidden");
+      }
+
+      function showForSale(entry) {
+        document.title = entry.heading || "Domain For Sale";
+        heading.textContent = entry.heading || "Domain For Sale";
+        message.textContent = entry.message || "This domain is available for purchase.";
+        showActionButton(entry.buttonLabel || "Buy Domain", entry.buyUrl);
+      }
+
+      function showSuspended() {
+        document.title = "Site Suspended";
+        heading.textContent = "Site Suspended";
+        message.innerHTML = 'Due to a billing issue <span id="site-url"></span> is currently unavailable.';
+        siteUrl = document.getElementById("site-url");
+        siteUrl.textContent = hostname;
+
+        fetch("payment.txt")
+          .then(function (res) {
+            if (!res.ok) return;
+            return res.text();
+          })
+          .then(function (text) {
+            if (!text) return;
+            var url = text.trim().split(/\s+/)[0];
+            showActionButton("Pay Now", url);
+          })
+          .catch(function () {});
+      }
+
+      var currentHost = normalizeHostname(hostname);
+
+      fetch("domains.json")
         .then(function (res) {
-          if (!res.ok) return;
-          return res.text();
+          if (!res.ok) throw new Error("domains.json unavailable");
+          return res.json();
         })
-        .then(function (text) {
-          if (!text) return;
+        .then(function (data) {
+          var entries = (data && data.forSale) || [];
+          var match = entries.find(function (entry) {
+            return normalizeHostname(entry.domain) === currentHost;
+          });
 
-          var url = text.trim().split(/\s+/)[0];
-          if (!/^https?:\/\//i.test(url)) return;
-
-          payNow.href = url;
-          payNow.removeAttribute("hidden");
+          if (match) {
+            showForSale(match);
+          } else {
+            showSuspended();
+          }
         })
-        .catch(function () {});
+        .catch(function () {
+          showSuspended();
+        });
     })();
   </script>
 </body>
